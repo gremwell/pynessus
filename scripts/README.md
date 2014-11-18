@@ -30,10 +30,13 @@ This script is used to launch scans that will use a nmap xml file as input so we
 again. You'll need to have Nmap XML plugin installed on your Nesssus server instance to be able to use it.
 
 ```shell
-$ python nmapscan.py -c gremwell.conf -n Test -p "Import Nmap XML_" -x localhost.xm
+$ python nmapscan.py -c <config_file> -n <project_name> -p <template_policy_name> -x <nmap_xml_file>
 ```
 
-The log file will provide details about the ongoing process
+The script will upload the Nmap xml file to the Nessus server then it will create a new policy by copying the provided policy via the `-p` parameter,
+modify this new policy to set Nmap plugin related settings and launch a new scan following this newly created policy.
+
+The log file will provide details about the ongoing process :
 
 ```
 2014-11-18 13:26:39.216345    DEBUG Logger initiated; Logfile: /home/quentin/tools/pynessus/nessus.log, Loglevel: 10
