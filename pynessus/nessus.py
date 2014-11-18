@@ -11,7 +11,7 @@ import json
 from xml.dom.minidom import parseString
 from time import sleep
 
-from pynessus.models.scan import Scan
+from models.scan import Scan
 from models.tag import Tag
 from models.policy import Policy
 from models.user import User
