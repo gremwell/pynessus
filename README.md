@@ -28,8 +28,8 @@ scripts directory.
 
 ## Contribute
 
-* Issue Tracker: github.com/QKaiser/pynessus/issues
-* Source Code: github.com/QKaiser/pynessus
+* Issue Tracker: https://github.com/QKaiser/pynessus/issues
+* Source Code: https://github.com/QKaiser/pynessus
 
 ## Support
 
