@@ -248,16 +248,10 @@ if __name__ == "__main__":
     parser.add_option("-f", dest='infile', help="input file with multiple scans to run")
     parser.add_option("-c", dest='configfile', default='nessus.conf', help="configuration file to use")
     parser.add_option("-x", "--xml-nmap-file", dest="nmap_xml_file", help="")
-    parser.add_option("--list-policies", dest="list_policies", help="")
 
     (options, args) = parser.parse_args()
     x = None
 
-    if options.configfile is not None and options.list_policies is not None:
-        x = NessusRunner(options.configfile, [])
-        for policy in x.scanner.policies:
-            print "%s - %s" % (policy.id, policy.name)
-        sys.exit(0)
     if options.configfile is not None and (options.infile is not None or options.nmap_xml_file is not None):
         if options.infile is not None and options.nmap_xml_file is None:
             # Start with multiple scans.
