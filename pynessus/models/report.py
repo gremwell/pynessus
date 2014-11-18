@@ -84,3 +84,4 @@ class Report(object):
             filename = "%s.%s" % (self._name, self._format)
         with open(filename, "wb") as f:
             f.write(self.content)
+        return filename
