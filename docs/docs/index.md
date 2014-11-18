@@ -1,11 +1,18 @@
+### TODO
+
+* Schedule frequency setting data model
+* create account on RTD
+* create account on PyPi
+* deploy / publish
+
 # PyNessus
 
-PyNessus is a python library that can be used to communicate with the REST backedn of a Nessus Server.
+Client for the Nessus vulnerability scanner REST API. Currently support Nessus versions >= 5.0. All exposed functionnalities
+are implemented.
 
 ## Features
 
 * Full support of Nessus functionalities
-
 
 ## Installation
 
@@ -33,8 +40,12 @@ scripts directory.
 
 ## Support
 
-If you are having issues, please let me know via the issue tracker or by mail (kaiserquentin@gmail.com).
+If you are having issues, please let me know via the issue tracker or by mail (quentin@gremwell.com).
 
 ## License
 
 The project is licensed under the Apache 2.0 License.
+
+## Credits
+
+Original ideas were taken from https://code.google.com/p/nessusxmlrpc by Kurtis Miller
