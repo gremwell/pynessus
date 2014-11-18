@@ -6,3 +6,5 @@ test.py
 reports
 .idea
 build
+dist
+MANIFEST

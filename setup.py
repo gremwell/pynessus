@@ -11,11 +11,11 @@ CLASSIFIERS = [
     'Operating System :: OS Independent',
 ]
 setup(
-    name="pynessus",
+    name="python-nessus",
     description="Nessus python client.",
     version=VERSION,
     author="Quentin Kaiser",
-    author_email="kaiserquentin@gmail.com",
+    author_email="quentin@gremwell.com",
     url="https://github.com/qkaiser/pynessus",
     download_url="https://github.com/qkaiser/pynessus/releases/latest",
     package_dir={'pynessus': 'pynessus'},
