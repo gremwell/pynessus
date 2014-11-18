@@ -1,10 +1,3 @@
-### TODO
-
-* Schedule frequency setting data model
-* create account on RTD
-* create account on PyPi
-* deploy / publish
-
 # PyNessus
 
 Client for the Nessus vulnerability scanner REST API. Currently support Nessus versions >= 5.0. All exposed functionnalities
