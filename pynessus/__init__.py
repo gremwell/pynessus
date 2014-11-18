@@ -1,4 +1,4 @@
-__version__ = "0.1"
+__version__ = "0.1.2"
 from nessus import Nessus, NessusAPIError
 from models.policy import Policy
 from models.report import Report
