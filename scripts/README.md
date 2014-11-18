@@ -89,27 +89,18 @@ The log file will provide details about the ongoing process
 This script will simply download all available reports from the Nessus server in the format of your choice.
 
 ```shell
-$ python loadreports.py -c gremwell.conf -f nessus.v2
+$ python loadreports.py -c config.conf
 [+] Successfully logged in.
 [+] 9 reports will be downloaded.
-[+] Downloading report 87346a9b-f366-00e9-2edd-451693f592f6566c523bdb634060
-[+] 87346a9b-f366-00e9-2edd-451693f592f6566c523bdb634060 report downloaded to 87346a9b-f366-00e9-2edd-451693f592f6566c523bdb634060.nessus.v2
-[+] Downloading report 29616c31-858e-3c3d-fcd4-92413a72c29c6b935fb58c7dfb32
-[+] 29616c31-858e-3c3d-fcd4-92413a72c29c6b935fb58c7dfb32 report downloaded to 29616c31-858e-3c3d-fcd4-92413a72c29c6b935fb58c7dfb32.nessus.v2
-[+] Downloading report 7b0d272b-b81e-5f81-f8d8-044c9a17c7015c36d10528f069e7
-[+] 7b0d272b-b81e-5f81-f8d8-044c9a17c7015c36d10528f069e7 report downloaded to 7b0d272b-b81e-5f81-f8d8-044c9a17c7015c36d10528f069e7.nessus.v2
-[+] Downloading report 7cd871ef-f2b5-9c68-9160-97a83b7848087b07db1cee5d02b9
-[+] 7cd871ef-f2b5-9c68-9160-97a83b7848087b07db1cee5d02b9 report downloaded to 7cd871ef-f2b5-9c68-9160-97a83b7848087b07db1cee5d02b9.nessus.v2
-[+] Downloading report d8faf8e2-79dc-ae42-5336-faabee88d101d7323a71cecdbbde
-[+] d8faf8e2-79dc-ae42-5336-faabee88d101d7323a71cecdbbde report downloaded to d8faf8e2-79dc-ae42-5336-faabee88d101d7323a71cecdbbde.nessus.v2
-[+] Downloading report 5b2e896c-f7da-fa14-877d-c3403cdbc570f1c9e7ef303cfcb7
-[+] 5b2e896c-f7da-fa14-877d-c3403cdbc570f1c9e7ef303cfcb7 report downloaded to 5b2e896c-f7da-fa14-877d-c3403cdbc570f1c9e7ef303cfcb7.nessus.v2
-[+] Downloading report 1438f9a1-c228-83d1-d345-29b4b6f85b27edbba8fc879a142c
-[+] 1438f9a1-c228-83d1-d345-29b4b6f85b27edbba8fc879a142c report downloaded to 1438f9a1-c228-83d1-d345-29b4b6f85b27edbba8fc879a142c.nessus.v2
-[+] Downloading report d7808a8d-95dd-861f-e79b-1f6cd162dc9b5faff40e31bee8d5
-[+] d7808a8d-95dd-861f-e79b-1f6cd162dc9b5faff40e31bee8d5 report downloaded to d7808a8d-95dd-861f-e79b-1f6cd162dc9b5faff40e31bee8d5.nessus.v2
-[+] Downloading report 83d9d99b-f22f-f38f-1a4b-d0ef191a8612a251b6a85e3079ad
-[+] 83d9d99b-f22f-f38f-1a4b-d0ef191a8612a251b6a85e3079ad report downloaded to 83d9d99b-f22f-f38f-1a4b-d0ef191a8612a251b6a85e3079ad.nessus.v2
+[+] Report downloaded to 87346a9b-f366-00e9-2edd-451693f592f6566c523bdb634060.nessus.v2
+[+] Report downloaded to 29616c31-858e-3c3d-fcd4-92413a72c29c6b935fb58c7dfb32.nessus.v2
+[+] Report downloaded to 7b0d272b-b81e-5f81-f8d8-044c9a17c7015c36d10528f069e7.nessus.v2
+[+] Report downloaded to 7cd871ef-f2b5-9c68-9160-97a83b7848087b07db1cee5d02b9.nessus.v2
+[+] Report downloaded to d8faf8e2-79dc-ae42-5336-faabee88d101d7323a71cecdbbde.nessus.v2
+[+] Report downloaded to 5b2e896c-f7da-fa14-877d-c3403cdbc570f1c9e7ef303cfcb7.nessus.v2
+[+] Report downloaded to 1438f9a1-c228-83d1-d345-29b4b6f85b27edbba8fc879a142c.nessus.v2
+[+] Report downloaded to d7808a8d-95dd-861f-e79b-1f6cd162dc9b5faff40e31bee8d5.nessus.v2
+[+] Report downloaded to 83d9d99b-f22f-f38f-1a4b-d0ef191a8612a251b6a85e3079ad.nessus.v2
 [+] Successfully logged out.
 ```
 
