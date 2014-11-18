@@ -30,11 +30,27 @@ This script is used to launch scans that will use a nmap xml file as input so we
 again. You'll need to have Nmap XML plugin installed on your Nesssus server instance to be able to use it.
 
 ```shell
+$ python nmapscan.py -h
+Usage: nmapscan.py [options]
+
+Options:
+  -h, --help            show this help message and exit
+  -n NAME               name for the scan
+  -p POLICY             policy (on server-side) to use in the scan
+  -f INFILE             input file with multiple scans to run
+  -c CONFIGFILE         configuration file to use
+  -x NMAP_XML_FILE, --xml-nmap-file=NMAP_XML_FILE
+```
+
+Basic usage : 
+
+```shell
 $ python nmapscan.py -c <config_file> -n <project_name> -p <template_policy_name> -x <nmap_xml_file>
 ```
 
 The script will upload the Nmap xml file to the Nessus server then it will create a new policy by copying the provided policy via the `-p` parameter,
-modify this new policy to set Nmap plugin related settings and launch a new scan following this newly created policy.
+modify this new policy to set Nmap plugin related settings and launch a new scan following this newly created policy. Once the scan is done, the
+script download the nessus.v2 file to your report directory.
 
 The log file will provide details about the ongoing process :
 
@@ -48,6 +64,11 @@ The log file will provide details about the ongoing process :
 2014-11-18 13:26:43.404651     INFO Scan successfully started; Owner: 'quentin', Name: 'Test'
 2014-11-18 13:30:48.067551     INFO Report for scan Test saved at /home/quentin/tools/pynessus/reports/d7808a8d-95dd-861f-e79b-1f6cd162dc9b5faff40e31bee8d5.nessus.v2
 2014-11-18 13:30:48.067795     INFO All done; closing
+```
+Instead of calling the script for a single scan, you can use the `-f` parameter to provide a csv file that follows this structure : 
+
+``` 
+<scan_name>,<nmap_xml_file_location>,<policy_name>
 ```
 
 ## cgiscan.py
