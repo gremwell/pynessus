@@ -18,7 +18,7 @@ setup(
     author_email="quentin@gremwell.com",
     url="https://github.com/qkaiser/pynessus",
     download_url="https://github.com/qkaiser/pynessus/releases/latest",
-    package_dir={'pynessus': 'pynessus'},
-    packages=['pynessus'],
+    package_dir={'pynessus': 'pynessus', 'pynessus.models': 'pynessus/models'},
+    packages=['pynessus', 'pynessus.models'],
     classifiers=CLASSIFIERS,
 )

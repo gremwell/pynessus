@@ -12,13 +12,23 @@ are implemented.
 You can install pynessus either via pip or by cloning the repository :
 
 ```shell
-$ pip install pynessus
+$ pip install python-nessus
 ```
 
 ```shell
 $ git clone https://github.com/QKaiser/pynessus.git pynessus
 $ cd pynessus
 $ python setup.py install
+```
+
+```shell
+quentin@grmwl$ python
+Python 2.7.6 (default, Mar 22 2014, 22:59:56)
+[GCC 4.8.2] on linux2
+Type "help", "copyright", "credits" or "license" for more information.
+>>> from pynessus import Nessus
+>>> Nessus()
+<pynessus.nessus.Nessus object at 0x7f2a6f5aae50>
 ```
 
 ## Documentation
