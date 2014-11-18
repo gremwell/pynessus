@@ -1,0 +1,14 @@
+# Defaults
+
+[core]
+server = nessus01
+port = 8834
+user = nessus
+password = *pass*
+logfile = /home/user/tools/pynessus/nessus.log
+report_path = /home/user/tools/pynessus/reports
+loglevel = debug
+limit = 3
+sleepmax = 600
+sleepmin = 300
+
