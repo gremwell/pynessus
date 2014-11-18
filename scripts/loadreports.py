@@ -26,10 +26,9 @@ if __name__ == "__main__":
         print "[+] Successfully logged in."
         print "[+] %d reports will be downloaded." % (len(nessus.reports))
         for report in nessus.reports:
-            print "[+] Downloading report %s" % report.name
             nessus.load_report(report, fmt)
             path = report.save()
-            print "[+] %s report downloaded to %s" % (report.name, path)
+            print "[+] Report downloaded to %s" % path
 
         if nessus.logout():
             print "[+] Successfully logged out."
