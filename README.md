@@ -1,5 +1,7 @@
 # PyNessus
 
+[![Documentation Status](https://readthedocs.org/projects/python-nessus/badge/?version=latest)](https://readthedocs.org/projects/python-nessus/?badge=latest)
+
 Client for the Nessus vulnerability scanner REST API. Currently support Nessus versions >= 5.0. All exposed functionnalities
 are implemented.
 
