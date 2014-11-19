@@ -1,8 +1,10 @@
-# PyNessus : Nessus REST API client.
+PyNessus : Nessus REST API client.
+===================================
 
 python-nessus is an Apache 2 Licensed Nessus library, written in Python, for security auditors and pentesters.
 
-## Features Support
+Features Support
+----------------
 
 * Users management
 * Policies management
@@ -11,29 +13,38 @@ python-nessus is an Apache 2 Licensed Nessus library, written in Python, for sec
 * Schedules management
 * Reports management
 
-## User Guide
+User Guide
+----------
 
-### Introduction
+Introduction
+^^^^^^^^^^^^
 
-### Installation
+Installation
+^^^^^^^^^^^^
 
 You can install python-nessus either via pip or by cloning the repository.
 
-.. code-block:: html
+.. code-block:: sh
+
     $ pip install python-nessus
 
 
-.. code-block:: shell
+.. code-block:: sh
+
     $ git clone https://github.com/QKaiser/pynessus.git pynessus
     $ cd pynessus
     $ python setup.py install
 
 
-### Quickstart
+Quickstart
+^^^^^^^^^^
 
-#### Connect to a Nessus Server
+Connect to a Nessus Server
+"""""""""""""""""""""""""""
 
 .. code-block:: python
+   :linenos:
+
     from pynessus import Nessus
     from pynessus.models.user import User
     server = Nessus("localhost", 8834)
@@ -42,10 +53,12 @@ You can install python-nessus either via pip or by cloning the repository.
     else:
         print "Fail!"
 
-
-#### Manage policies
+Manage policies
+"""""""""""""""
 
 .. code-block:: python
+   :linenos:
+
     from pynessus import Nessus
     from pynessus.models.user import User
     from pynessus.models.policy import Policy
@@ -86,11 +99,14 @@ You can install python-nessus either via pip or by cloning the repository.
     else:
         print "Fail!"
 
-#### Manage scans
+Manage scans
+""""""""""""
 
 * Create a scan, pause, stop, delete
 
 .. code-block:: python
+   :linenos:
+
     import time
     from pynessus import Nessus
     from pynessus.models.user import User
@@ -139,11 +155,14 @@ You can install python-nessus either via pip or by cloning the repository.
         print "Fail!"
 
 
-#### Manage tags
+Manage tags
+"""""""""""
 
 * Create a tag, move a scan from one tag to another, delete all scans from a specifc tag
 
 .. code-block:: python
+   :linenos:
+
     from pynessus import Nessus
     from pynessus.models.user import User
     from pynessus.models.tag import Tag
@@ -177,10 +196,12 @@ You can install python-nessus either via pip or by cloning the repository.
     else:
         print "Fail!"
 
-#### Manage schedules
-
+Manage schedules
+""""""""""""""""
 
 .. code-block:: python
+   :linenos:
+
     from pynessus import Nessus
     from pynessus.models.user import User
     from pynessus.models.schedule import Schedule
@@ -200,19 +221,23 @@ You can install python-nessus either via pip or by cloning the repository.
     else:
         print "Fail!"
 
-## API Documentation
+API Documentation
+-----------------
 
 Documentation generated from docstring.
 
-## Contributor Guide
+Contributor Guide
+-----------------
 
-### Development Philosophy
+Development Philosophy
+^^^^^^^^^^^^^^^^^^^^^^
 
 * Semantic versioning
 * PEP8 compliance
 * Comment your shit
 
-### How to Help
+How to Help
+^^^^^^^^^^^
 
 python-nessus is under active development, and contributions are more than welcome!
 
@@ -221,7 +246,8 @@ Fork the repository on GitHub and start making your changes to a new branch.
 Write a test which shows that the bug was fixed.
 Send a pull request and bug the maintainer until it gets merged and published. :) Make sure to add yourself to AUTHORS.
 
-#### Test suite:
+Test suite
+"""""""""""
 
 ```
 $ python -m unittest test.py
@@ -229,13 +255,15 @@ $ python -m unittest test.py
 25 passed in 3.50 seconds
 ```
 
-#### Runtime Environments
+Runtime Environments
+""""""""""""""""""""
 
 python-nessus currently supports the following versions of Python:
 
 * Python 2.6
 * Python 2.7
 
-## Authors
+Authors
+--------
 
 * Quentin Kaiser (quentin@gremwell.com)
