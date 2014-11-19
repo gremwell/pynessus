@@ -12,9 +12,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from nessusobject import NessusObject
 
-
-class Tag(object):
+class Tag(NessusObject):
     """
     A Nessus Tag instance.
 
@@ -24,22 +24,14 @@ class Tag(object):
     http://google-styleguide.googlecode.com/svn/trunk/pyguide.html
     """
 
-    def __init__(self):
+    def __init__(self, server):
         """Constructor"""
-        self._id = -1
+        super(Tag, self).__init__(server)
         self._default_tag = 1
         self._type = None
         self._name = None
         self._custom = False
         self._unread_count = 0
-
-    @property
-    def id(self):
-        return self._id
-
-    @id.setter
-    def id(self, _id):
-        self._id = _id
 
     @property
     def default_tag(self):

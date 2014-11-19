@@ -13,8 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from nessusobject import NessusObject
 
-class Scan(object):
+class Scan(NessusObject):
     """
     A Nessus Scan instance.
 
@@ -24,8 +25,10 @@ class Scan(object):
     http://google-styleguide.googlecode.com/svn/trunk/pyguide.html
     """
 
-    def __init__(self):
+    def __init__(self, server):
         """Constructor"""
+        super(Scan, self).__init__(server)
+        self._id = 0
         self._status = None
         self._name = None
         self._description = None
@@ -40,12 +43,30 @@ class Scan(object):
         self._owner = None
         self._shared = False
         self._type = None
-        self._id = None
         self._uuid = None
         self._policy = None
         self._scanner = None
         self._custom_targets = None
         self._target_file_name = None
+
+    def launch(self):
+        return self._server.create_scan(self)
+
+    def pause(self):
+        if self._id is not None:
+            self._server.pause_scan(self)
+
+    def resume(self):
+        if self._id is not None:
+            self._server.resume_scan(self)
+
+    def stop(self):
+        if self._id is not None:
+            self._server.stop_scan(self)
+
+    def progress(self):
+        if self._id is not None:
+            return self._server.get_scan_progress(self)
 
     @property
     def status(self):
@@ -158,14 +179,6 @@ class Scan(object):
     @type.setter
     def type(self, _type):
         self._type = _type
-
-    @property
-    def id(self):
-        return self._id
-
-    @id.setter
-    def id(self, _id):
-        self._id = _id
 
     @property
     def uuid(self):

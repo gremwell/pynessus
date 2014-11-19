@@ -12,9 +12,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from nessusobject import NessusObject
 
-
-class Report(object):
+class Report(NessusObject):
     """
     A Nessus Report instance.
 
@@ -24,14 +24,15 @@ class Report(object):
     http://google-styleguide.googlecode.com/svn/trunk/pyguide.html
     """
 
-    def __init__(self, name=None, readable_name=None, status=None, timestamp=0, content=None, _format="nessus.v2"):
+    def __init__(self, server):
         """Constructor"""
-        self._name = name
-        self._readable_name = readable_name
-        self._status = status
-        self._timestamp = timestamp
-        self._content = content
-        self._format = _format
+        super(Report, self).__init__(server)
+        self._name = None
+        self._readable_name = None
+        self._status = None
+        self._timestamp = 0
+        self._content = None
+        self._format = "nessus.v2"
 
     @property
     def name(self):
@@ -81,7 +82,7 @@ class Report(object):
     def format(self, _format):
         self._format = _format
 
-    def save(self, filename=None):
+    def download(self, filename=None, fmt="nessus.v2"):
         """
         Save the report content to a file.
         Params:
@@ -89,8 +90,10 @@ class Report(object):
         Returns:
             True if successful, False otherwise.
         """
-        if filename is None:
-            filename = "%s.%s" % (self._name, self._format)
-        with open(filename, "wb") as f:
-            f.write(self.content)
-        return filename
+        if self._id is not None:
+            self._server.load_report(self, fmt)
+            if filename is None:
+                filename = "%s.%s" % (self._name, self._format)
+            with open(filename, "wb") as f:
+                f.write(self.content)
+            return filename

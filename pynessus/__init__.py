@@ -20,5 +20,3 @@ from models.scan import Scan
 from models.schedule import Schedule
 from models.tag import Tag
 from models.user import User
-from models.plugin import PluginFamily, Plugin
-from models.preference import PreferenceValue, Preference

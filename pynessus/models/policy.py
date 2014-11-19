@@ -13,8 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from nessusobject import NessusObject
 
-class Policy(object):
+class Policy(NessusObject):
     """
     A Nessus Policy instance.
 
@@ -24,10 +25,10 @@ class Policy(object):
     http://google-styleguide.googlecode.com/svn/trunk/pyguide.html
     """
 
-    def __init__(self):
+    def __init__(self, server):
         """Constructor
-        """
-        self._id = -1
+            """
+        super(Policy, self).__init__(server)
         self._db_id = -1
         self._object_id = 0
         self._name = None
@@ -39,12 +40,8 @@ class Policy(object):
         self._last_modification_date = 0
         self._creation_date = 0
         self._no_target = False
-
-        # BASIC
         self._description = None
         self._allow_post_scan_report_editing = True
-
-        # PORT SCANNING
         self._port_scan_range = 0
         self._consider_unscanned_port_as_closed = False
         self._nessus_snmp_scanner = False
@@ -53,8 +50,6 @@ class Policy(object):
         self._netstat_port_scanner_wmi = False
         self._nessus_tcp_scanner = False
         self._nessus_syn_scanner = False
-
-        # PERFORMANCE
         self._max_checks_per_host = 5
         self._max_hosts_per_scan = 100
         self._network_receive_timeout = 5
@@ -62,24 +57,31 @@ class Policy(object):
         self._max_simultaneous_tcp_sessions_per_scan = None
         self._reduce_parallel_connections_on_congestion = False
         self._use_kernel_congestion_detection = False
-
-        # ADVANCED
         self._safe_checks = True
         self._silent_dependencies = True
         self._log_scan_details_to_server = False
         self._stop_host_scan_on_disconnect = False
         self._avoid_sequential_scan = False
         self._designate_hosts_by_their_dns_name = False
-
         self._settings = {}
+        self._plugins = None
+        self._preferences = None
 
-    @property
-    def id(self):
-        return self._id
+    def clone(self):
+        if self._id is not None:
+            return self._server.clone_policy(self)
 
-    @id.setter
-    def id(self, _id):
-        self._id = int(_id)
+    def download(self, filename=None):
+        if self._id is not None:
+            return self._server.download_policy(self, filename)
+
+    def load_preferences(self):
+        if self._id is not None:
+            return self._server.load_policy_preferences(self)
+
+    def load_plugins(self):
+        if self._id is not None:
+            return self._server.load_policy_plugins(self)
 
     @property
     def db_id(self):
@@ -373,3 +375,172 @@ class Policy(object):
     @settings.setter
     def settings(self, value):
         self._settings = value
+
+    @property
+    def preferences(self):
+        if self._preferences is None:
+            self.load_preferences()
+        return self._preferences
+
+    @preferences.setter
+    def preferences(self, value):
+        self._preferences = value
+
+    @property
+    def plugins(self):
+        if self._plugins is None:
+            self.load_plugins()
+        return self._plugins
+
+    @plugins.setter
+    def plugins(self, value):
+        self._plugins = value
+
+class PluginFamily(object):
+
+    def __init__(self):
+        self._id = -1
+        self._name = None
+        self._plugin_count = 0
+        self._status = "enabled"
+        self._plugins = []
+
+    @property
+    def id(self):
+        return self._id
+
+    @id.setter
+    def id(self, value):
+        self._id = value
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+
+    @property
+    def plugin_count(self):
+        return self._plugin_count
+
+    @plugin_count.setter
+    def plugin_count(self, value):
+        self._plugin_count = value
+
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter
+    def status(self, value):
+        self._status = value
+
+    @property
+    def plugins(self):
+        return self._plugins
+
+    @plugins.setter
+    def plugins(self, value):
+        self._plugins = value
+
+
+class Plugin(object):
+
+    def __init__(self):
+        self._id = -1
+        self._name = None
+        self._filename = None
+        self._status = "enabled"
+
+    @property
+    def id(self):
+        return self._id
+
+    @id.setter
+    def id(self, value):
+        self._id = int(value)
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+
+    @property
+    def filename(self):
+        return self._filename
+
+    @filename.setter
+    def filename(self, value):
+        self._filename = value
+
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter
+    def status(self, value):
+        self._status = value
+
+
+class PreferenceValue(object):
+    """
+    """
+    def __init__(self):
+        self._id = -1
+        self._name = None
+        self._type = "entry"
+
+    @property
+    def id(self):
+        return self._id
+
+    @id.setter
+    def id(self, value):
+        self._id = int(value)
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+
+    @property
+    def type(self):
+        return self._type
+
+    @type.setter
+    def type(self, value):
+        self._type = value
+
+
+class Preference(object):
+    """
+
+    """
+    def __init__(self):
+
+        self._name = None
+        self._values = []
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+
+    @property
+    def values(self):
+        return self._values
+
+    @values.setter
+    def values(self, value):
+        self._values = value

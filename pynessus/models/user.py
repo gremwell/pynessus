@@ -12,9 +12,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from nessusobject import NessusObject
 
 
-class User(object):
+class User(NessusObject):
     """
     A Nessus User instance.
 
@@ -24,14 +25,14 @@ class User(object):
     http://google-styleguide.googlecode.com/svn/trunk/pyguide.html
     """
 
-    def __init__(self, username=None, password=None):
+    def __init__(self, server, username=None, password=None):
         """
         Constructor
         Params:
             username(string): username
             password(string): password
         """
-        self._id = -1
+        super(User, self).__init__(server)
         self._name = None
         self._username = username
         self._password = password
@@ -41,14 +42,6 @@ class User(object):
         self._last_login = 0
         self._permissions = 32
         self._type = "local"
-
-    @property
-    def id(self):
-        return self._id
-
-    @id.setter
-    def id(self, _id):
-        self._id = _id
 
     @property
     def name(self):

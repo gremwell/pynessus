@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from httplib import HTTPSConnection, CannotSendRequest, ImproperConnectionState
+from httplib import HTTPSConnection, CannotSendRequest, ImproperConnectionState, HTTPException
 from random import randint
 import os
 import json
@@ -21,12 +21,11 @@ from xml.dom.minidom import parseString
 from time import sleep
 
 from models.scan import Scan
+from models.schedule import Schedule
 from models.tag import Tag
-from models.policy import Policy
+from models.policy import Policy, Plugin, PluginFamily, PreferenceValue, Preference
 from models.user import User
 from models.report import Report
-from models.plugin import PluginFamily, Plugin
-from models.preference import PreferenceValue, Preference
 
 
 class NessusAPIError(Exception):
@@ -86,6 +85,24 @@ class Nessus(object):
         self._reports = []
 
         self._headers = {"Content-type": "application/json", "Accept": "application/json"}
+
+    def Scan(self):
+        return Scan(self)
+
+    def Policy(self):
+        return Policy(self)
+
+    def Schedule(self):
+        return Schedule(self)
+
+    def User(self, username=None, password=None):
+        return User(self, username, password)
+
+    def Tag(self):
+        return Tag(self)
+
+    def Report(self):
+        return Report(self)
 
     def _request(self, method, target, params, headers=None):
         """
@@ -255,7 +272,7 @@ class Nessus(object):
             if "result" in response:
                 self._scans = []
                 for result in response['result']:
-                    scan = Scan()
+                    scan = self.Scan()
                     scan.status = result["status"]
                     scan.name = result["name"]
                     scan.tag = result["tags"]
@@ -289,7 +306,7 @@ class Nessus(object):
         if response is not None:
             self._tags = []
             for result in response['tags']:
-                tag = Tag()
+                tag = self.Tag()
                 tag.id = result["id"]
                 tag.type = result["type"] if "type" in result else "local"
                 tag.custom = result["custom"]
@@ -313,7 +330,7 @@ class Nessus(object):
             if "policy" in response["policies"]:
                 self._policies = []
                 for result in response['policies']["policy"]:
-                    policy = Policy()
+                    policy = self.Policy()
                     policy.id = result["id"]
                     policy.db_id = result["db_id"]
                     policy.name = result["name"]
@@ -343,7 +360,7 @@ class Nessus(object):
         if response is not None:
             self._users = []
             for result in response["user"]:
-                user = User()
+                user = self.User()
                 user.last_login = result["lastlogin"]
                 user.permissions = result["permissions"]
                 user.type = result["type"]
@@ -367,9 +384,13 @@ class Nessus(object):
             if "report" in response["reports"]:
                 self._reports = []
                 for result in response["reports"]["report"]:
-                    self._reports.append(
-                        Report(result["name"], result["readableName"], result["status"], result["timestamp"])
-                    )
+                    r = self.Report()
+                    r.id = result["name"]
+                    r.name = result["name"]
+                    r.readable_name = result["readableName"]
+                    r.status = result["status"]
+                    r.timestamp = result["timestamp"]
+                    self._reports.append(r)
             return True
         else:
             return False
@@ -452,9 +473,6 @@ class Nessus(object):
             'tag_id': scan.tag.id,
             'custom_targets': scan.custom_targets
         }
-
-        print params
-
         if scan.target_file_name is not None:
             params['target_file_name'] = scan.target_file_name
 
@@ -663,7 +681,6 @@ class Nessus(object):
         if policy.settings is not None:
             for k in policy.settings:
                 params[k] = policy.settings[k]
-        print params
         response = self._api_request("POST", "/policy/update", params)
         if response is not None:
             policy.id = response["metadata"]["id"]
@@ -673,16 +690,16 @@ class Nessus(object):
             policy.visibility = response["metadata"]["visibility"]
             self.load_policies()
             for _p in self.policies:
-                if _p.id == policy.id:
+                if int(_p.id) == int(policy.id):
                     policy.db_id = _p.db_id
                     policy.object_id = _p.object_id
             return True
         else:
             return False
 
-    def copy_policy(self, policy):
+    def clone_policy(self, policy):
         """
-        Copy a policy.
+        Clone a policy.
         Params:
             policy(Policy): policy instance to be created.
         Returns:
@@ -692,7 +709,7 @@ class Nessus(object):
         response = self._api_request("POST", "/policy/copy", params)
         if response is not None:
             _p = response["policy"]
-            p = Policy()
+            p = self.Policy()
             p.name = _p["policyname"]
             if "policycomments" in _p["policycontents"]:
                 p.description = _p["policycontents"]["policycomments"]
@@ -703,7 +720,7 @@ class Nessus(object):
             p.visibility = _p["visibility"]
             self.load_policies()
             for _p in self.policies:
-                if _p.id == p.id:
+                if int(_p.id) == int(p.id):
                     p.db_id = _p.db_id
                     p.object_id = _p.object_id
             return p
@@ -727,7 +744,25 @@ class Nessus(object):
         else:
             return False
 
-    def get_policy_preferences(self, policy):
+    def download_policy(self, policy, filename=None):
+        """
+        Download a policy description file.
+        Params:
+            policy(Policy): policy to be downloaded
+        Returns:
+            string: path where the policy has been saved.
+        """
+        if filename is None:
+            filename = "nessus_policy_%s.nessus" % policy.name
+        try:
+            response = self._request("GET", "/policy/download?policy_id=%d" % policy.id, "")
+            with open(filename, "wb") as f:
+                f.write(response)
+            return filename
+        except HTTPException as e:
+            return None
+
+    def load_policy_preferences(self, policy):
         """
         Load and assign policy preferences
         Params:
@@ -739,6 +774,7 @@ class Nessus(object):
         }
         response = self._api_request("POST", "/policy/list/plugins/preferences", params)
         if response is not None:
+            policy.preferences = []
             if "preference" in response["pluginpreferences"]:
                 for preference in response["pluginpreferences"]["preference"]:
                     p = Preference()
@@ -754,7 +790,7 @@ class Nessus(object):
         else:
             return False
 
-    def get_policy_plugins(self, policy):
+    def load_policy_plugins(self, policy):
         """
 
         :param policy:

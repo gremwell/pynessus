@@ -68,9 +68,9 @@ class Schedule(Scan):
     http://google-styleguide.googlecode.com/svn/trunk/pyguide.html
     """
 
-    def __init__(self):
+    def __init__(self, server):
         """Constructor"""
-        super(Schedule, self).__init__()
+        super(Schedule, self).__init__(server)
         self._uuid = None
         self._rrules = None
         self._starttime = None
@@ -78,6 +78,10 @@ class Schedule(Scan):
         self._emails = []
         self._notifications_filter_type = "and"
         self._notifications_filters = []
+
+    def launch(self):
+        if self._id is not None:
+            self._server.launch_schedule(self)
 
     @property
     def uuid(self):
