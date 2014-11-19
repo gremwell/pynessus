@@ -1,7 +1,5 @@
 # PyNessus
 
-|build-status| |docs|
-
 Client for the Nessus vulnerability scanner REST API. Currently support Nessus versions >= 5.0. All exposed functionnalities
 are implemented.
 
@@ -35,7 +33,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 
 ## Documentation
 
-The full documentation is available at https://pynessus.readthedocs.org . You can find example scripts under the
+The full documentation is available at https://python-nessus.readthedocs.org . You can find example scripts under the
 scripts directory.
 
 ## Contribute
