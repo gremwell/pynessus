@@ -10,12 +10,12 @@ from logging.handlers import WatchedFileHandler
 from datetime import datetime
 
 from pynessus.nessus import Nessus
-from pynessus.models.user import User
-from pynessus.models.scan import Scan
-from pynessus.models.report import Report
 
 
 class NessusRunner:
+    """
+    NessusRunner
+    """
     def __init__(self, configfile, scans):
         """
         :param configfile:
@@ -53,7 +53,6 @@ class NessusRunner:
 
         self.server = self.config.get('core', 'server')
         self.port = self.config.getint('core', 'port')
-        self.user = User(self.config.get('core', 'user'), self.config.get('core', 'password'))
         self.report_path = self.config.get('core', 'report_path')
         self.limit = self.config.getint('core', 'limit')
         self.sleepmax = self.config.getint('core', 'sleepmax')
@@ -63,9 +62,10 @@ class NessusRunner:
         try:
             self.info("Nessus scanner started.")
             self.scanner = Nessus(self.server, self.port)
+            self.user = self.scanner.User(self.config.get('core', 'user'), self.config.get('core', 'password'))
             if self.scanner.login(self.user):
                 self.info(
-                    "Connected to Nessus server; authenticated to server '%s' as user '%s'" % (self.server, self.user))
+                    "Connected to Nessus server; authenticated to server '%s' as user '%s'" % (self.server, self.user.username))
                 self.scanner.load()
             else:
                 self.error("An error occured when logging into nessus server.")
@@ -105,17 +105,17 @@ class NessusRunner:
                 scan["target"] = NessusRunner.parse_nmap(scan["nmap_xml_file"])
                 if self.scanner.upload_file(scan["nmap_xml_file"]):
                     self.info("%s has been uploaded." % (scan["nmap_xml_file"]))
+                    cp = None
                     for policy in self.scanner.policies:
                         if policy.name == scan["policy"]:
                             cp = policy
                     if cp is not None:
-                        p = self.scanner.copy_policy(cp)
+                        p = cp.clone()
                         if p is None:
                             raise Exception("An error occured while copying policy.")
                         else:
                             p.name = "%s %s %s" % (scan["name"], scan["nmap_xml_file"], int(time.time()))
                             prefid = None
-                            self.scanner.get_policy_preferences(p)
                             for preference in p.preferences:
                                 if "Nmap (XML file importer)" in preference.name:
                                     for value in preference.values:
@@ -128,16 +128,16 @@ class NessusRunner:
                                     "preferences.Nmap+(%s).%d" % (p.name.replace(" ", "+"), int(prefid)): os.path.basename(scan["nmap_xml_file"]),
                                 }
                                 p.settings = settings
-                                if not self.scanner.update_policy(p):
+                                if not p.save():
                                     raise Exception("An error occured while updating policy.")
                                 else:
-                                    currentscan = Scan()
+                                    currentscan = self.scanner.Scan()
                                     currentscan.name = scan["name"]
                                     currentscan.custom_targets = scan["target"]
                                     currentscan.policy = p
                                     currentscan.tag = self.scanner.tags[0]
 
-                                    if self.scanner.create_scan(currentscan):
+                                    if currentscan.launch():
                                         self.info("Scan successfully started; Owner: '%s', Name: '%s'" %
                                                   (currentscan.owner.name, currentscan.name))
                                         self.scans_running.append(currentscan)
@@ -162,7 +162,7 @@ class NessusRunner:
         Check for the completion of of running scans. Also, if there are scans left to be run, resume and run them.
         """
         for scan in self.scans_running:
-            if self.scanner.get_scan_progress(scan) >= 100:
+            if scan.progress() >= 100:
                 self.scans_complete.append(scan)
                 self.scans_running.remove(scan)
 
@@ -182,10 +182,10 @@ class NessusRunner:
         Report on currently completed scans.
         """
         for scan in self.scans_complete:
-            report = Report()
-            report.name = scan.uuid
-            self.scanner.load_report(report)
-            path = report.save("%s/%s.%s" % (self.report_path, report.name, report.format))
+            report = self.scanner.Report()
+            report.id, report.name = scan.uuid, scan.uuid
+
+            path = report.download("%s/%s.%s" % (self.report_path, report.name, report.format))
             if path is not None:
                 self.info("Report for scan %s saved at %s" % (scan.name, path))
 
