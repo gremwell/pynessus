@@ -1,5 +1,7 @@
 # PyNessus
 
+|build-status| |docs|
+
 Client for the Nessus vulnerability scanner REST API. Currently support Nessus versions >= 5.0. All exposed functionnalities
 are implemented.
 
