@@ -598,7 +598,7 @@ class Nessus(object):
         else:
             return False
 
-    def scan_diff(self, scan1, scan2):
+    def load_scan_diff(self, scan1, scan2):
         """
         Create a diff report between scan1 and scan2.
         Params:
@@ -613,9 +613,19 @@ class Nessus(object):
         }
         response = self._api_request("POST", "/result/diff", params)
         if response is not None:
-            return True
+            scan = self.Scan()
+            scan.uuid = response["report"]
+            params = {
+                "id": scan.uuid,
+                "status": "read"
+            }
+            response = self._api_request("POST", "/result/status/set", params)
+            if response is not None:
+                return scan
+            else:
+                return None
         else:
-            return False
+            return None
 
     def load_scan_vulnerabilities(self, scan):
         """
@@ -1224,12 +1234,13 @@ class Nessus(object):
     def get_scan_progress(self, scan):
         params = {"id" : scan.uuid}
         response = self._api_request("POST", "/result/details", params)
+        scan.status = response["info"]["status"]
         current = 0.0
         total = 0.0 if len(response["hosts"]) else 1.0
         for host in response["hosts"]:
             current += host["scanprogresscurrent"]
             total += host["scanprogresstotal"]
-        return current/total*100.0
+        return scan.status, current/total*100.0
 
     @property
     def scans(self):
