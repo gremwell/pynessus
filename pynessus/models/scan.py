@@ -48,6 +48,10 @@ class Scan(NessusObject):
         self._scanner = None
         self._custom_targets = None
         self._target_file_name = None
+        self._vulnerabilities = None
+        self._notes = None
+        self._remediations = None
+        self._hosts = None
 
     def launch(self):
         return self._server.create_scan(self)
@@ -67,6 +71,10 @@ class Scan(NessusObject):
     def progress(self):
         if self._id is not None:
             return self._server.get_scan_progress(self)
+
+    def diff(self, dscan):
+        if self._id is not None:
+            return self._server.load_scan_diff(self, dscan)
 
     @property
     def status(self):
@@ -219,3 +227,392 @@ class Scan(NessusObject):
     @target_file_name.setter
     def target_file_name(self, target_file_name):
         self._target_file_name = target_file_name
+
+    @property
+    def vulnerabilities(self):
+        if self._vulnerabilities is None:
+            self._server.load_scan_vulnerabilities(self)
+        return self._vulnerabilities
+
+    @vulnerabilities.setter
+    def vulnerabilities(self, value):
+        self._vulnerabilities = value
+
+    @property
+    def notes(self):
+        if self._notes is None:
+            self._server.load_scan_notes(self)
+        return self._notes
+
+    @notes.setter
+    def notes(self, value):
+        self._notes = value
+
+    @property
+    def hosts(self):
+        if self._hosts is None:
+            self._server.load_scan_hosts(self)
+        return self._hosts
+
+    @hosts.setter
+    def hosts(self, value):
+        self._hosts = value
+
+    @property
+    def remediations(self):
+        if self._remediations is None:
+            self._server.load_scan_remediations(self)
+        return self._remediations
+
+    @remediations.setter
+    def remediations(self, value):
+        self._remediations = value
+
+
+class Vulnerability(object):
+
+    def __init__(self):
+        self._id = None
+        self._count = 0
+        self._plugin_id = 0
+        self._plugin_name = 0
+        self._plugin_family = None
+        self._vuln_index = 0
+        self._severity = 0
+        self._severity_index = 0
+
+    @property
+    def id(self):
+        return self._id
+
+    @id.setter
+    def id(self, value):
+        self._id = value
+
+    @property
+    def count(self):
+        return self._count
+
+    @count.setter
+    def count(self, value):
+        self._count = value
+
+    @property
+    def plugin_id(self):
+        return self._plugin_id
+
+    @plugin_id.setter
+    def plugin_id(self, value):
+        self._plugin_id = value
+
+    @property
+    def plugin_name(self):
+        return self._plugin_name
+
+    @plugin_name.setter
+    def plugin_name(self, value):
+        self._plugin_name = value
+
+    @property
+    def plugin_family(self):
+        return self._plugin_family
+
+    @plugin_family.setter
+    def plugin_family(self, value):
+        self._plugin_family = value
+
+    @property
+    def vuln_index(self):
+        return self._vuln_index
+
+    @vuln_index.setter
+    def vuln_index(self, value):
+        self._vuln_index = value
+
+    @property
+    def severity(self):
+        return self._severity
+
+    @severity.setter
+    def severity(self, value):
+        self._severity = value
+
+    @property
+    def severity_index(self):
+        return self._severity_index
+
+    @severity_index.setter
+    def severity_index(self, value):
+        self._severity_index = value
+
+
+class Note(object):
+
+    def __init__(self):
+        self._title = None
+        self._message = None
+        self._severity = 0
+
+    @property
+    def title(self):
+        return self._title
+
+    @title.setter
+    def title(self, value):
+        self._title = value
+
+    @property
+    def message(self):
+        return self._message
+
+    @message.setter
+    def message(self, value):
+        self._message = value
+
+    @property
+    def severity(self):
+        return self._severity
+
+    @severity.setter
+    def severity(self, value):
+        self._severity = int(value)
+
+
+class Host(NessusObject):
+
+    def __init__(self, server):
+        super(Host, self).__init__(server)
+        self._scan = None
+        self._host_index = 0
+        self._totalchecksconsidered = 0
+        self._numchecksconsidered = 0
+        self._scanprogresstotal = 0
+        self._scanprogresscurrent = 0
+        self._score = 0
+        self._progress = None
+        self._critical = 0
+        self._high = 0
+        self._medium = 0
+        self._low = 0
+        self._info = 0
+        self._severity = 0
+        self._host_id = 0
+        self._hostname = None
+
+        self._ip = None
+        self._fqdn = None
+        self._start = None
+        self._end = None
+        self._vulnerabilities = None
+
+    @property
+    def host_index(self):
+        return self._host_index
+
+    @host_index.setter
+    def host_index(self, value):
+        self._host_index = value
+
+    @property
+    def totalchecksconsidered(self):
+        return self._totalchecksconsidered
+
+    @totalchecksconsidered.setter
+    def totalchecksconsidered(self, value):
+        self._totalchecksconsidered = value
+
+    @property
+    def numchecksconsidered(self):
+        return self._numchecksconsidered
+
+    @numchecksconsidered.setter
+    def numchecksconsidered(self, value):
+        self._numchecksconsidered = value
+
+    @property
+    def scanprogresstotal (self):
+        return self._scanprogresstotal
+
+    @scanprogresstotal .setter
+    def scanprogresstotal (self, value):
+        self._scanprogresstotal = value
+
+    @property
+    def scanprogresscurrent(self):
+        return self._scanprogresscurrent
+
+    @scanprogresscurrent.setter
+    def scanprogresscurrent(self, value):
+        self._scanprogresscurrent = value
+
+    @property
+    def score(self):
+        return self._score
+
+    @score.setter
+    def score(self, value):
+        self._score = value
+
+    @property
+    def progress(self):
+        return self._progress
+
+    @progress.setter
+    def progress(self, value):
+        self._progress = value
+
+    @property
+    def critical(self):
+        return self._critical
+
+    @critical.setter
+    def critical(self, value):
+        self._critical = value
+
+    @property
+    def high(self):
+        return self._high
+
+    @high.setter
+    def high(self, value):
+        self._high = value
+
+    @property
+    def medium(self):
+        return self._medium
+
+    @medium.setter
+    def medium(self, value):
+        self._medium = value
+
+    @property
+    def low(self):
+        return self._low
+
+    @low.setter
+    def low(self, value):
+        self._low = value
+
+    @property
+    def info(self):
+        return self._info
+
+    @info.setter
+    def info(self, value):
+        self._info = value
+
+    @property
+    def severity(self):
+        return self._severity
+
+    @severity.setter
+    def severity(self, value):
+        self._severity = value
+
+    @property
+    def host_id(self):
+        return self._host_id
+
+    @host_id.setter
+    def host_id(self, value):
+        self._host_id = value
+
+    @property
+    def hostname(self):
+        return self._hostname
+
+    @hostname.setter
+    def hostname(self, value):
+        self._hostname = value
+
+    @property
+    def ip(self):
+        return self._ip
+
+    @ip.setter
+    def ip(self, value):
+        self._ip = value
+
+    @property
+    def fqdn(self):
+        return self._fqdn
+
+    @fqdn.setter
+    def fqdn(self, value):
+        self._fqdn = value
+
+    @property
+    def start(self):
+        return self._start
+
+    @start.setter
+    def start(self, value):
+        self._start = value
+
+    @property
+    def end(self):
+        return self._end
+
+    @end.setter
+    def end(self, value):
+        self._end = value
+
+    @property
+    def vulnerabilities(self):
+        if self._vulnerabilities is None:
+            self._server.load_host_vulnerabilities(self)
+        return self._vulnerabilities
+
+    @vulnerabilities.setter
+    def vulnerabilities(self, value):
+        self._vulnerabilities = value
+
+    @property
+    def scan(self):
+        return self._scan
+
+    @scan.setter
+    def scan(self, value):
+        self._scan = value
+
+
+class Remediation(object):
+
+    def __init__(self):
+
+        self._hosts = 0
+        self._vulns = 0
+        self._value = None
+        self._text = None
+
+    @property
+    def hosts(self):
+        return self._hosts
+
+    @hosts.setter
+    def hosts(self, value):
+        self._hosts = int(value)
+
+    @property
+    def vulns(self):
+        return self._vulns
+
+    @vulns.setter
+    def vulns(self, value):
+        self._vulns = int(value)
+
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        self._value = str(value)
+
+    @property
+    def text(self):
+        return self._text
+
+    @text.setter
+    def text(self, value):
+        self._text = str(value)
