@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-__version__ = "0.2.0"
+__version__ = "0.2.2"
 from nessus import Nessus, NessusAPIError
 from models.policy import Policy
 from models.report import Report
