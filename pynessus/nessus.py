@@ -20,7 +20,7 @@ import json
 from xml.dom.minidom import parseString
 from time import sleep
 
-from models.scan import Scan
+from models.scan import Scan, Vulnerability, Note, Host, Remediation
 from models.schedule import Schedule
 from models.tag import Tag
 from models.policy import Policy, Plugin, PluginFamily, PreferenceValue, Preference
@@ -88,6 +88,9 @@ class Nessus(object):
 
     def Scan(self):
         return Scan(self)
+
+    def Host(self):
+        return Host(self)
 
     def Policy(self):
         return Policy(self)
@@ -613,6 +616,175 @@ class Nessus(object):
             return True
         else:
             return False
+
+    def load_scan_vulnerabilities(self, scan):
+        """
+        Load vulnerabilities results from scan.
+        Params:
+            scan(Scan): scan that we will load.
+        Returns:
+            True if successful, False otherwise.
+        """
+        params = {
+            'id': scan.id
+        }
+        response = self._api_request("POST", "/result/details", params)
+        if response is not None:
+            scan._vulnerabilities = []
+            for vulnerability in response["vulnerabilities"]:
+                v = Vulnerability()
+                v.plugin_id = vulnerability["plugin_id"]
+                v.plugin_name = vulnerability["plugin_name"]
+                v.plugin_family = vulnerability["plugin_family"]
+                v.severity = vulnerability["severity"]
+                v.severity_index = vulnerability["severity_index"]
+                v.count = vulnerability["count"]
+                v.vuln_index = vulnerability["vuln_index"]
+                #scan.vulnerabilities.append(v)
+            return True
+        else:
+            return False
+
+    def load_scan_remediations(self, scan):
+        """
+        Load a scan remediations content.
+        :param scan:
+        :return:
+        """
+        params = {
+            'id': scan.id
+        }
+        response = self._api_request("POST", "/result/details", params)
+        if response is not None:
+            scan._remediations = []
+            if "remediations" in response["remediations"]:
+                for remediation in response["remediations"]["remediations"]:
+                    r = Remediation()
+                    r.text = remediation["remediation"]
+                    r.value = remediation["value"]
+                    r.vulns = remediation["vulns"]
+                    r.hosts = remediation["hosts"]
+                    scan.remediations.append(r)
+            return True
+        else:
+            return False
+
+    def load_scan_notes(self, scan):
+        """
+        Load a scan notes.
+        Params:
+            scan(Scan):
+        Returns:
+        """
+        params = {
+            'id': scan.id
+        }
+        response = self._api_request("POST", "/result/details", params)
+        if response is not None:
+            scan.notes = []
+            if "note" in response["notes"]:
+                for note in response["notes"]["note"]:
+                    n = Note()
+                    n.title = note["title"]
+                    n.message = note["message"]
+                    n.severity = note["severity"]
+                    scan.notes.append(n)
+            return True
+        else:
+            return
+
+    def load_scan_hosts(self, scan):
+        """
+        Load a scan notes.
+        Params:
+            scan(Scan):
+        Returns:
+        """
+        params = {
+            'id': scan.id
+        }
+        response = self._api_request("POST", "/result/details", params)
+        if response is not None:
+            scan.hosts = []
+            for host in response["hosts"]:
+                    h = self.Host()
+                    h.scan = scan
+                    h.host_index = host["host_index"]
+                    h.totalchecksconsidered = host["totalchecksconsidered"]
+                    h.numchecksconsidered = host["numchecksconsidered"]
+                    h.scanprogresstotal = host["scanprogresstotal"]
+                    h.scanprogresscurrent = host["scanprogresscurrent"]
+                    h.score = host["score"]
+                    h.progress = host["progress"]
+                    h.critical = host["critical"]
+                    h.high = host["high"]
+                    h.medium = host["medium"]
+                    h.low = host["low"]
+                    h.info = host["info"]
+                    h.severity = host["severity"]
+                    h.host_id = host["host_id"]
+                    h.hostname = host["hostname"]
+                    scan.hosts.append(h)
+            return True
+        else:
+            return False
+
+    def load_host_info(self, host):
+        """
+
+        :param host:
+        :return:
+        """
+        params = {
+            'id': host.scan.id,
+            'host_id': host.id
+        }
+        response = self._api_request("POST", "/result/details", params)
+        if response is not None:
+            host.vulnerabilities = []
+            for vulnerability in response["vulnerabilities"]:
+                    v = Vulnerability()
+                    v.plugin_id = vulnerability["plugin_id"]
+                    v.plugin_name = vulnerability["plugin_name"]
+                    v.plugin_family = vulnerability["plugin_family"]
+                    v.severity = vulnerability["severity"]
+                    v.severity_index = vulnerability["severity_index"]
+                    v.count = vulnerability["count"]
+                    v.vuln_index = vulnerability["vuln_index"]
+                    host.vulnerabilities.append(v)
+            return True
+        else:
+            return False
+
+    def load_host_vulnerabilities(self, host):
+        params = {
+            'id': host.scan.id,
+            'host_id': host.id
+        }
+        response = self._api_request("POST", "/result/details", params)
+        if response is not None:
+            host.vulnerabilities = []
+            for vulnerability in response["vulnerabilities"]:
+                    v = Vulnerability()
+                    v.plugin_id = vulnerability["plugin_id"]
+                    v.plugin_name = vulnerability["plugin_name"]
+                    v.plugin_family = vulnerability["plugin_family"]
+                    v.severity = vulnerability["severity"]
+                    v.severity_index = vulnerability["severity_index"]
+                    v.count = vulnerability["count"]
+                    v.vuln_index = vulnerability["vuln_index"]
+                    host.vulnerabilities.append(v)
+            return True
+        else:
+            return False
+
+    def load_host_compliance(self, host):
+        """
+
+        :param host:
+        :return:
+        """
+        raise Exception("Not yet implemented.")
 
     def upload_file(self, filename):
         """
