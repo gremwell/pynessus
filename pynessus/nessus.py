@@ -1243,6 +1243,14 @@ class Nessus(object):
         return scan.status, current/total*100.0
 
     @property
+    def server_version(self):
+        return self._server_version
+
+    @server_version.setter
+    def server_version(self, value):
+        self._server_version = value
+
+    @property
     def scans(self):
         return self._scans
 
