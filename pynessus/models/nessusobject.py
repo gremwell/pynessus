@@ -8,7 +8,7 @@ class NessusObject(object):
         if self._id is None:
             return getattr(self._server, "create_%s" % self.__class__.__name__.lower())(self)
         else:
-            return getattr(self._server,"update_%s" % self.__class__.__name__.lower())(self)
+            return getattr(self._server, "update_%s" % self.__class__.__name__.lower())(self)
 
     def delete(self):
         if self._id is not None:

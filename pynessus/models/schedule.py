@@ -71,6 +71,7 @@ class Schedule(Scan):
     def __init__(self, server):
         """Constructor"""
         super(Schedule, self).__init__(server)
+        self._id = None
         self._uuid = None
         self._rrules = None
         self._starttime = None
@@ -81,7 +82,7 @@ class Schedule(Scan):
 
     def launch(self):
         if self._id is not None:
-            self._server.launch_schedule(self)
+            return self._server.launch_schedule(self)
 
     @property
     def uuid(self):

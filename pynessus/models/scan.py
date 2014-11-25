@@ -58,15 +58,15 @@ class Scan(NessusObject):
 
     def pause(self):
         if self._id is not None:
-            self._server.pause_scan(self)
+            return self._server.pause_scan(self)
 
     def resume(self):
         if self._id is not None:
-            self._server.resume_scan(self)
+            return self._server.resume_scan(self)
 
     def stop(self):
         if self._id is not None:
-            self._server.stop_scan(self)
+            return self._server.stop_scan(self)
 
     def progress(self):
         if self._id is not None:
