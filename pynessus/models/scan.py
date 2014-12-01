@@ -45,6 +45,7 @@ class Scan(NessusObject):
         self._type = None
         self._uuid = None
         self._policy = None
+        self._template = None
         self._scanner = None
         self._custom_targets = None
         self._target_file_name = None
@@ -52,29 +53,6 @@ class Scan(NessusObject):
         self._notes = None
         self._remediations = None
         self._hosts = None
-
-    def launch(self):
-        return self._server.create_scan(self)
-
-    def pause(self):
-        if self._id is not None:
-            return self._server.pause_scan(self)
-
-    def resume(self):
-        if self._id is not None:
-            return self._server.resume_scan(self)
-
-    def stop(self):
-        if self._id is not None:
-            return self._server.stop_scan(self)
-
-    def progress(self):
-        if self._id is not None:
-            return self._server.get_scan_progress(self)
-
-    def diff(self, dscan):
-        if self._id is not None:
-            return self._server.load_scan_diff(self, dscan)
 
     @property
     def status(self):
@@ -205,6 +183,14 @@ class Scan(NessusObject):
         self._policy = policy
 
     @property
+    def template(self):
+        return self._template
+
+    @template.setter
+    def template(self, template):
+        self._template = template
+
+    @property
     def scanner(self):
         return self._scanner
 
@@ -267,6 +253,459 @@ class Scan(NessusObject):
     @remediations.setter
     def remediations(self, value):
         self._remediations = value
+
+    def configure(self):
+        """
+        Changes the schedule or policy parameters of a scan.
+        Params:
+        Returns:
+        """
+        return
+
+    def create(self):
+        """
+        Creates a scan.
+        Params:
+        Returns:
+        """
+        if self._server.server_version[0] == "5":
+            params = {
+                'policy_id': self.policy.object_id,
+                'name': self.name,
+                'tag_id': self.tag.id,
+                'custom_targets': self.custom_targets
+            }
+            if self.target_file_name is not None:
+                params['target_file_name'] = self.target_file_name
+
+            response = self._server._api_request("POST", "/scan/new", params)
+            if response is not None:
+                self.id = response["scan"]["id"]
+                self.uuid = response["scan"]["uuid"]
+                self.status = response["scan"]["status"]
+                for user in self.users:
+                    if user.name == response["scan"]["owner"]:
+                        self.owner = user
+                return True
+            else:
+                return False
+        elif self._server.server_version[0] == "6":
+            params = {
+                "uuid": self.template.uuid,
+                "settings": {
+                        "name": self.name,
+                        "description": self.description,
+                        "folder_id": self.tag.id,
+                        "scanner_id": self.scanner.id if self.scanner is not None else 1,
+                        "text_targets": self.custom_targets,
+                        "file_targets": self.target_file_name if self.target_file_name is not None else "",
+                        "launch": "ON_DEMAND",
+                        "launch_now": True,
+                        "emails": "",
+                        "filter_type": "",
+                        "filters": [],
+                },
+                "credentials": {},
+                "plugins": {}
+            }
+
+            response = self._server._api_request("POST", "/scans", params)
+            if response is not None:
+                self.id = response["scan"]["id"]
+                self.uuid = response["scan"]["uuid"]
+                self.status = response["scan"]["status"]
+                for user in self.users:
+                    if user.name == response["scan"]["owner"]:
+                        self.owner = user
+                return True
+            else:
+                return False
+        else:
+            return False
+
+
+    def delete(self):
+        """
+        Deletes a scan.
+        Params:
+        Returns:
+        """
+        if self._server.server_version[0] == "5":
+            params = {
+                'scan_uuid': self.uuid
+            }
+            response = self._server._api_request("POST", "/result/delete", params)
+            if response is not None:
+                return True
+            else:
+                return False
+        elif self._server.server_version[0] == "6":
+            response = self._server._api_request("DELETE", "/scans/%d" % self.id, "")
+            if response is None:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def delete_history(self):
+        """
+         Deletes historical results from a scan.
+        Params:
+        Returns:
+        """
+        return
+
+    def details(self):
+        """
+        Returns details for the given scan.
+        Params:
+        Returns:
+        """
+        return
+
+    def download(self):
+        """
+        Download an exported scan.
+        Params:
+        Returns:
+        """
+        return
+
+    def export(self):
+        """
+        Export the given scan.
+        Params:
+        Returns:
+        """
+        return
+
+    def export_status(self):
+        """
+        Check the file status of an exported scan.
+        Params:
+        Returns:
+        """
+
+    def host_details(self):
+        """
+         Returns details for the given host.
+        Params:
+        Returns:
+        """
+        return
+
+    def _import(self):
+        """
+        Import an existing scan uploaded using Nessus.file.
+        Params:
+        Returns:
+        """
+        return
+
+    def move(self, tag):
+        """
+        Move a scan from a tag to another.
+        Params:
+            tag(Tag): The tag where the scan will be placed.
+        Returns:
+            bool: True if successful, False otherwise.
+        """
+        if self._server.server_version[0] == "5":
+            params = {
+                'id': self.uuid,
+                'tags': tag.id
+            }
+            response = self._server._api_request("POST", "/tag/replace", params)
+            if response is not None:
+                return True
+            else:
+                return False
+        elif self._server.server_version[0] == "6":
+            raise Exception("Not yet implemented.")
+        else:
+            return False
+
+    def launch(self):
+        """
+        Launches a scan.
+        Params:
+        Returns:
+        """
+
+
+    def pause(self):
+        """
+        Pauses a scan.
+        Params:
+        Returns:
+        """
+        if self._server.server_version[0] == "5":
+            params = {
+                'scan_uuid': self.uuid
+            }
+            response = self._server._api_request("POST", "/scan/pause", params)
+            if response is not None:
+                return True
+            else:
+                return False
+        elif self._server.server_version[0] == "6":
+            response = self._server._api_request("POST", "/scans/%d/pause" % self.id, "")
+            if response is not None:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def stop(self):
+        """
+        Stops a scan.
+        Params:
+        Returns:
+        """
+        if self._server.server_version[0] == "5":
+            params = {
+                'scan_uuid': self.uuid
+            }
+            response = self._server._api_request("POST", "/scan/stop", params)
+            if response is not None:
+                return True
+            else:
+                return False
+        elif self._server.server_version[0] == "6":
+            response = self._server._api_request("POST", "/scans/%d/stop" % self.id, "")
+            if response is not None:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+
+    def resume(self):
+        """
+        Resumes a scan.
+        Params:
+        Returns:
+        """
+        if self._server.server_version[0] == "5":
+            params = {
+                'scan_uuid': self.uuid
+            }
+            response = self._server._api_request("POST", "/scan/resume", params)
+            if response is not None:
+                return True
+            else:
+                return False
+        elif self._server.server_version[0] == "6":
+            response = self._server._api_request("POST", "/scans/%d/resume" % self.id, "")
+            if response is not None:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def diff(self, _scan):
+        """
+        Create a diff report between scan1 and scan2.
+        Params:
+            scan1(Scan): first scan instance
+            scan2(Scan): second scan instance
+        Returns:
+            bool: True if successful, False otherwise.
+        """
+        params = {
+            'report1': self.id,
+            'report2': _scan.id
+        }
+        response = self._server._api_request("POST", "/result/diff", params)
+        if response is not None:
+            scan = self._server.Scan()
+            scan.uuid = response["report"]
+            params = {
+                "id": scan.uuid,
+                "status": "read"
+            }
+            response = self._server._api_request("POST", "/result/status/set", params)
+            if response is not None:
+                return scan
+            else:
+                return None
+        else:
+            return None
+
+    @property
+    def vulnerabilities(self):
+        """
+        Load vulnerabilities results from scan.
+        Params:
+            scan(Scan): scan that we will load.
+        Returns:
+            True if successful, False otherwise.
+        """
+        if self._server.server_version[0] == "5":
+            params = {
+                'id': self.id
+            }
+            response = self._server._api_request("POST", "/result/details", params)
+            if response is not None:
+                self.vulnerabilities = []
+                for vulnerability in response["vulnerabilities"]:
+                    v = Vulnerability()
+                    v.plugin_id = vulnerability["plugin_id"]
+                    v.plugin_name = vulnerability["plugin_name"]
+                    v.plugin_family = vulnerability["plugin_family"]
+                    v.severity = vulnerability["severity"]
+                    v.severity_index = vulnerability["severity_index"]
+                    v.count = vulnerability["count"]
+                    v.vuln_index = vulnerability["vuln_index"]
+                    self.vulnerabilities.append(v)
+                return True
+            else:
+                return False
+        elif self._server.server_version[0] == "6":
+            raise Exception("Not yet implemented.")
+        else:
+            return False
+
+    @vulnerabilities.setter
+    def vulnerabilities(self, value):
+        if type(value) is list:
+            self._vulnerabilities = value
+        else:
+            raise Exception("Invalid format.")
+
+    @property
+    def remediations(self):
+        """
+        Load a scan remediations content.
+        :param scan:
+        :return:
+        """
+        if self._server.server_version[0] == "5":
+            params = {
+                'id': self.id
+            }
+            response = self._server._api_request("POST", "/result/details", params)
+            if response is not None:
+                self.remediations = []
+                if "remediations" in response["remediations"]:
+                    for remediation in response["remediations"]["remediations"]:
+                        r = Remediation()
+                        r.text = remediation["remediation"]
+                        r.value = remediation["value"]
+                        r.vulns = remediation["vulns"]
+                        r.hosts = remediation["hosts"]
+                        self.remediations.append(r)
+                return True
+            else:
+                return False
+        elif self._server.server_version[0] == "6":
+            raise Exception("Not yet implemented.")
+        else:
+            return False
+
+    @remediations.setter
+    def remediations(self, value):
+        if type(value) is list:
+            self._remediations = value
+        else:
+            raise Exception("Invalid format.")
+
+    @property
+    def notes(self):
+        """
+        Load a scan notes.
+        Params:
+            scan(Scan):
+        Returns:
+        """
+        if self._server.server_version[0] == "5":
+            params = {
+                'id': self.id
+            }
+            response = self._server._api_request("POST", "/result/details", params)
+            if response is not None:
+                self.notes = []
+                if "note" in response["notes"]:
+                    for note in response["notes"]["note"]:
+                        n = Note()
+                        n.title = note["title"]
+                        n.message = note["message"]
+                        n.severity = note["severity"]
+                        self.notes.append(n)
+                return True
+            else:
+                return False
+        elif self._server.server_version[0] == "6":
+            raise Exception("Not yet implemented.")
+        else:
+            return False
+
+    @notes.setter
+    def notes(self, value):
+        if type(value) is list:
+            self._notes = value
+        else:
+            raise Exception("Invalid format")
+
+    @property
+    def hosts(self):
+        """
+        Load a scan notes.
+        Params:
+            scan(Scan):
+        Returns:
+        """
+        if self._server.server_version[0] == "5":
+            params = {
+                'id': self.id
+            }
+            response = self._server._api_request("POST", "/result/details", params)
+            if response is not None:
+                self.hosts = []
+                for host in response["hosts"]:
+                    h = self.Host()
+                    h.scan = self
+                    h.host_index = host["host_index"]
+                    h.totalchecksconsidered = host["totalchecksconsidered"]
+                    h.numchecksconsidered = host["numchecksconsidered"]
+                    h.scanprogresstotal = host["scanprogresstotal"]
+                    h.scanprogresscurrent = host["scanprogresscurrent"]
+                    h.score = host["score"]
+                    h.progress = host["progress"]
+                    h.critical = host["critical"]
+                    h.high = host["high"]
+                    h.medium = host["medium"]
+                    h.low = host["low"]
+                    h.info = host["info"]
+                    h.severity = host["severity"]
+                    h.host_id = host["host_id"]
+                    h.hostname = host["hostname"]
+                    self.hosts.append(h)
+                return True
+            else:
+                return False
+        elif self._server.server_version[0] == "6":
+            raise Exception("Not yet implemented.")
+        else:
+            return False
+
+    @hosts.setter
+    def hosts(self, value):
+        if type(value) is list:
+            self._hosts = value
+        else:
+            raise Exception("Invalid format.")
+
+    @staticmethod
+    def timezones(self):
+        """
+        Returns the timezone list for creating a scan.
+        """
+        return
 
 
 class Vulnerability(object):
@@ -378,208 +817,18 @@ class Note(object):
         self._severity = int(value)
 
 
-class Host(NessusObject):
-
-    def __init__(self, server):
-        super(Host, self).__init__(server)
-        self._scan = None
-        self._host_index = 0
-        self._totalchecksconsidered = 0
-        self._numchecksconsidered = 0
-        self._scanprogresstotal = 0
-        self._scanprogresscurrent = 0
-        self._score = 0
-        self._progress = None
-        self._critical = 0
-        self._high = 0
-        self._medium = 0
-        self._low = 0
-        self._info = 0
-        self._severity = 0
-        self._host_id = 0
-        self._hostname = None
-
-        self._ip = None
-        self._fqdn = None
-        self._start = None
-        self._end = None
-        self._vulnerabilities = None
-
-    @property
-    def host_index(self):
-        return self._host_index
-
-    @host_index.setter
-    def host_index(self, value):
-        self._host_index = value
-
-    @property
-    def totalchecksconsidered(self):
-        return self._totalchecksconsidered
-
-    @totalchecksconsidered.setter
-    def totalchecksconsidered(self, value):
-        self._totalchecksconsidered = value
-
-    @property
-    def numchecksconsidered(self):
-        return self._numchecksconsidered
-
-    @numchecksconsidered.setter
-    def numchecksconsidered(self, value):
-        self._numchecksconsidered = value
-
-    @property
-    def scanprogresstotal (self):
-        return self._scanprogresstotal
-
-    @scanprogresstotal .setter
-    def scanprogresstotal (self, value):
-        self._scanprogresstotal = value
-
-    @property
-    def scanprogresscurrent(self):
-        return self._scanprogresscurrent
-
-    @scanprogresscurrent.setter
-    def scanprogresscurrent(self, value):
-        self._scanprogresscurrent = value
-
-    @property
-    def score(self):
-        return self._score
-
-    @score.setter
-    def score(self, value):
-        self._score = value
-
-    @property
-    def progress(self):
-        return self._progress
-
-    @progress.setter
-    def progress(self, value):
-        self._progress = value
-
-    @property
-    def critical(self):
-        return self._critical
-
-    @critical.setter
-    def critical(self, value):
-        self._critical = value
-
-    @property
-    def high(self):
-        return self._high
-
-    @high.setter
-    def high(self, value):
-        self._high = value
-
-    @property
-    def medium(self):
-        return self._medium
-
-    @medium.setter
-    def medium(self, value):
-        self._medium = value
-
-    @property
-    def low(self):
-        return self._low
-
-    @low.setter
-    def low(self, value):
-        self._low = value
-
-    @property
-    def info(self):
-        return self._info
-
-    @info.setter
-    def info(self, value):
-        self._info = value
-
-    @property
-    def severity(self):
-        return self._severity
-
-    @severity.setter
-    def severity(self, value):
-        self._severity = value
-
-    @property
-    def host_id(self):
-        return self._host_id
-
-    @host_id.setter
-    def host_id(self, value):
-        self._host_id = value
-
-    @property
-    def hostname(self):
-        return self._hostname
-
-    @hostname.setter
-    def hostname(self, value):
-        self._hostname = value
-
-    @property
-    def ip(self):
-        return self._ip
-
-    @ip.setter
-    def ip(self, value):
-        self._ip = value
-
-    @property
-    def fqdn(self):
-        return self._fqdn
-
-    @fqdn.setter
-    def fqdn(self, value):
-        self._fqdn = value
-
-    @property
-    def start(self):
-        return self._start
-
-    @start.setter
-    def start(self, value):
-        self._start = value
-
-    @property
-    def end(self):
-        return self._end
-
-    @end.setter
-    def end(self, value):
-        self._end = value
-
-    @property
-    def vulnerabilities(self):
-        if self._vulnerabilities is None:
-            self._server.load_host_vulnerabilities(self)
-        return self._vulnerabilities
-
-    @vulnerabilities.setter
-    def vulnerabilities(self, value):
-        self._vulnerabilities = value
-
-    @property
-    def scan(self):
-        return self._scan
-
-    @scan.setter
-    def scan(self, value):
-        self._scan = value
-
-
 class Remediation(object):
+    """
+    Scan remediation.
+
+    Attributes:
+        hosts(int): hosts concerned by the remediation
+        vulns(int): quantity of vulnerabilities related to the remediation
+        value(string): remediation content
+        text(string): remediation content
+    """
 
     def __init__(self):
-
         self._hosts = 0
         self._vulns = 0
         self._value = None

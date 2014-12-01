@@ -19,354 +19,593 @@ class Policy(NessusObject):
     """
     A Nessus Policy instance.
 
-    Attributes:
-
-    _Google Python Style Guide:
-    http://google-styleguide.googlecode.com/svn/trunk/pyguide.html
+    Params:
+        id(int):
+        template_uuid(string):
+        name(string):
+        description(string):
+        owner_id(string):
+        owner(string):
+        shared(bool):
+        user_permissions(int):
+        creation_date(int):
+        last_modification_date(int):
+        visibility(bool):
+        no_target(bool):
     """
 
     def __init__(self, server):
-        """Constructor
-            """
         super(Policy, self).__init__(server)
-        self._db_id = -1
-        self._object_id = 0
+        self._id = 0
+        self._template_uuid = None
         self._name = None
+        self._description = None
+        self._owner_id = None
         self._owner = None
-        self._visibility = None
         self._shared = False
         self._user_permissions = 0
-        self._timestamp = 0
-        self._last_modification_date = 0
         self._creation_date = 0
+        self._last_modification_date = 0
+        self._visibility = False
         self._no_target = False
-        self._description = None
-        self._allow_post_scan_report_editing = True
-        self._port_scan_range = 0
-        self._consider_unscanned_port_as_closed = False
-        self._nessus_snmp_scanner = False
-        self._netstat_port_scanner_ssh = False
-        self._ping_remote_host = False
-        self._netstat_port_scanner_wmi = False
-        self._nessus_tcp_scanner = False
-        self._nessus_syn_scanner = False
-        self._max_checks_per_host = 5
-        self._max_hosts_per_scan = 100
-        self._network_receive_timeout = 5
-        self._max_simultaneous_tcp_sessions_per_host = None
-        self._max_simultaneous_tcp_sessions_per_scan = None
-        self._reduce_parallel_connections_on_congestion = False
-        self._use_kernel_congestion_detection = False
-        self._safe_checks = True
-        self._silent_dependencies = True
-        self._log_scan_details_to_server = False
-        self._stop_host_scan_on_disconnect = False
-        self._avoid_sequential_scan = False
-        self._designate_hosts_by_their_dns_name = False
-        self._settings = {}
-        self._plugins = None
+        self._settings = None
         self._preferences = None
+        self._plugins = None
 
-    def clone(self):
-        if self._id is not None:
-            return self._server.clone_policy(self)
+    @staticmethod
+    def list():
+        """
+        Returns the policy list.
+        Params:
+        Returns:
+        """
+        return
 
-    def download(self, filename=None):
-        if self._id is not None:
-            return self._server.download_policy(self, filename)
+    def configure(self):
+        """
+        Changes the parameters of a policy.
+        Params:
+        Returns:
+        """
+        return
 
-    def load_preferences(self):
-        if self._id is not None:
-            return self._server.load_policy_preferences(self)
+    def copy(self):
+        """
+        Copy a policy.
+        Params:
+        Returns:
+        """
+        if self._server.server_version[0] == "5":
+            params = {"policy_id": self.id}
+            response = self._server._api_request("POST", "/policy/copy", params)
+            if response is not None:
+                _p = response["policy"]
+                p = self._server.Policy()
+                p.name = _p["policyname"]
+                if "policycomments" in _p["policycontents"]:
+                    p.description = _p["policycontents"]["policycomments"]
+                for user in self._server.users:
+                    if user.name == _p["policyowner"]:
+                        self.owner = user
+                p.id = _p["policyid"]
+                p.visibility = _p["visibility"]
+                return p
+            else:
+                return None
+        elif self._server.server_version[0] == "6":
+            response = self._server._api_request("POST", "/policies/%d/copy" % self.id, "")
+            if response is not None:
+                p = self._server.Policy()
+                p.id = response["id"]
+                p.name = response["name"]
+                return p
+            else:
+                return None
+        else:
+            return None
 
-    def load_plugins(self):
-        if self._id is not None:
-            return self._server.load_policy_plugins(self)
+    def create(self):
+        """
+        Create a policy.
+        Params:
+        Returns:
+        """
+        if self._server.server_version[0] == "5":
+            params = {
+                "policy_id": 0,
+                "general.Basic.0": self.name,
+                "general.Basic.1": self.description
+            }
+            if self._server.settings is not None:
+                params = dict(params.items() + self._server.settings.items())
+            response = self._server._api_request("POST", "/policy/update", params)
+            if response is not None:
+                self.id = response["metadata"]["id"]
+                for user in self._server.users:
+                    if user.name == response["metadata"]["owner"]:
+                        self.owner = user
+                self.visibility = response["metadata"]["visibility"]
+                return True
+            else:
+                return False
 
-    @property
-    def db_id(self):
-        return self._db_id
+        elif self._server.server_version[0] == "6":
+            #TODO : get uuids from templates
+            params = {
+                "uuid": "ad629e16-03b6-8c1d-cef6-ef8c9dd3c658d24bd260ef5f9e66",
+                "settings": {
+                    "name": self.name,
+                    "description": self.description,
+                    "acls": [{"permissions": "16", "type": "default"}],
+                    "ping_the_remote_host": "yes",
+                    "test_local_nessus_host": "yes",
+                    "fast_network_discovery": "no",
+                    "arp_ping": "yes",
+                    "tcp_ping": "yes",
+                    "tcp_ping_dest_ports": "built-in",
+                    "icmp_ping": "yes",
+                    "icmp_unreach_means_host_down": "no",
+                    "icmp_ping_retries": "2",
+                    "udp_ping": "no",
+                    "scan_network_printers": "no",
+                    "scan_netware_hosts": "no",
+                    "wol_mac_addresses": "",
+                    "wol_wait_time": "5",
+                    "network_type": "Mixed (use RFC 1918)",
+                    "unscanned_closed": "no",
+                    "portscan_range": "default",
+                    "ssh_netstat_scanner": "yes",
+                    "wmi_netstat_scanner": "yes",
+                    "snmp_scanner": "yes",
+                    "only_portscan_if_enum_failed": "yes",
+                    "verify_open_ports": "no",
+                    "tcp_scanner": "no",
+                    "syn_scanner": "yes",
+                    "syn_firewall_detection": "Automatic (normal)",
+                    "udp_scanner": "no",
+                    "svc_detection_on_all_ports": "yes",
+                    "detect_ssl": "yes",
+                    "ssl_prob_ports": "Known SSL ports",
+                    "enumerate_all_ciphers": "yes",
+                    "check_crl": "no",
+                    "report_paranoia": "Normal",
+                    "thorough_tests": "no",
+                    "av_grace_period": "0",
+                    "smtp_domain": "example.com",
+                    "smtp_from": "nobody@example.com",
+                    "smtp_to": "postmaster@[AUTO_REPLACED_IP]",
+                    "provided_creds_only": "yes",
+                    "test_default_oracle_accounts": "no",
+                    "scan_webapps": "no",
+                    "request_windows_domain_info": "yes",
+                    "enum_domain_users_start_uid": "1000",
+                    "enum_domain_users_end_uid": "1200",
+                    "enum_local_users_start_uid": "1000",
+                    "enum_local_users_end_uid": "1200",
+                    "win_known_bad_hashes": "",
+                    "win_known_good_hashes": "",
+                    "host_whitelist": "",
+                    "report_verbosity": "Normal",
+                    "report_superseded_patches": "no",
+                    "silent_dependencies": "yes",
+                    "allow_post_scan_editing": "yes",
+                    "reverse_lookup": "no",
+                    "log_live_hosts": "no",
+                    "display_unreachable_hosts": "no",
+                    "safe_checks": "yes",
+                    "log_whole_attack": "no",
+                    "stop_scan_on_disconnect": "no",
+                    "slice_network_addresses": "no",
+                    "reduce_connections_on_congestion": "no",
+                    "use_kernel_congestion_detection": "no",
+                    "network_receive_timeout": "5",
+                    "max_checks_per_host": "5",
+                    "max_hosts_per_scan": "20",
+                    "max_simult_tcp_sessions_per_host": "",
+                    "max_simult_tcp_sessions_per_scan": "",
+                    "ssh_known_hosts": "",
+                    "ssh_port": "22",
+                    "ssh_client_banner": "OpenSSH_5.0",
+                    "never_send_win_creds_in_the_clear": "yes",
+                    "dont_use_ntlmv1": "yes",
+                    "start_remote_registry": "no",
+                    "enable_admin_shares": "no",
+                    "apm_force_updates": "yes",
+                    "apm_update_timeout": "5",
+                    "http_login_method": "POST",
+                    "http_login_max_redir": "0",
+                    "http_login_invert_auth_regex": "no",
+                    "http_login_auth_regex_on_headers": "no",
+                    "http_login_auth_regex_nocase": "no",
+                    "snmp_port": "161",
+                    "additional_snmp_port1": "161",
+                    "additional_snmp_port2": "161",
+                    "additional_snmp_port3": "161",
+                    "patch_audit_over_telnet": "no",
+                    "patch_audit_over_rsh": "no",
+                    "patch_audit_over_rexec": "no",
+                    "aws_ui_region_type": "Rest of the World",
+                    "aws_us_east_1": "no",
+                    "aws_us_west_1": "no",
+                    "aws_us_west_2": "no",
+                    "aws_eu_west_1": "no",
+                    "aws_ap_northeast_1": "no",
+                    "aws_ap_southeast_1": "no",
+                    "aws_ap_southeast_2": "no",
+                    "aws_sa_east_1": "no",
+                    "aws_us_gov_west_1": "no",
+                    "aws_use_https": "yes",
+                    "aws_verify_ssl": "yes"
+                },
+                "credentials": {},
+                "plugins": {}
+            }
+            if self._server.settings is not None:
+                params = dict(params.items() + self.settings.items())
+            response = self._server._api_request("POST", "/policies", params)
+            if response is not None:
+                self.id = response["policy_id"]
+                self.name = response["policy_name"]
+                response2 = self._server._api_request("GET", "/policies/%d" % (self.id), "")
+                if response2 is not None:
+                    return True
+                else:
+                    return False
+            else:
+                return False
+        else:
+            return False
 
-    @db_id.setter
-    def db_id(self, db_id):
-        self._db_id = int(db_id)
 
-    @property
-    def object_id(self):
-        return self._object_id
+    def edit(self):
+        """
+        Edit a policy.
+        Params:
+        Returns:
+        """
+        if self._server.server_version[0] == "5":
+            params = {
+                "policy_id": self.id,
+                "general.Basic.0": self.name,
+                "general.Basic.1": self.description
+            }
+            if self.settings is not None:
+                for k in self.settings:
+                    params[k] = self.settings[k]
+            response = self._server._api_request("POST", "/policy/update", params)
+            if response is not None:
+                self.id = response["metadata"]["id"]
+                for user in self.users:
+                    if user.name == response["metadata"]["owner"]:
+                        self.owner = user
+                self.visibility = response["metadata"]["visibility"]
+                return True
+            else:
+                return False
 
-    @object_id.setter
-    def object_id(self, object_id):
-        self._object_id = int(object_id)
+        elif self._server.server_version[0] == "6":
+            params = {
+                "uuid": "ad629e16-03b6-8c1d-cef6-ef8c9dd3c658d24bd260ef5f9e66",
+                "settings": {
+                    "name": "My new policy",
+                    "description": "Describe this new policy",
+                    "acls": [{"permissions": "16", "type": "default"}],
+                    "ping_the_remote_host": "yes",
+                    "test_local_nessus_host": "yes",
+                    "fast_network_discovery": "no",
+                    "arp_ping": "yes",
+                    "tcp_ping": "yes",
+                    "tcp_ping_dest_ports": "built-in",
+                    "icmp_ping": "yes",
+                    "icmp_unreach_means_host_down": "no",
+                    "icmp_ping_retries": "2",
+                    "udp_ping": "no",
+                    "scan_network_printers": "no",
+                    "scan_netware_hosts": "no",
+                    "wol_mac_addresses": "",
+                    "wol_wait_time": "5",
+                    "network_type": "Mixed (use RFC 1918)",
+                    "unscanned_closed": "no",
+                    "portscan_range": "default",
+                    "ssh_netstat_scanner": "yes",
+                    "wmi_netstat_scanner": "yes",
+                    "snmp_scanner": "yes",
+                    "only_portscan_if_enum_failed": "yes",
+                    "verify_open_ports": "no",
+                    "tcp_scanner": "no",
+                    "syn_scanner": "yes",
+                    "syn_firewall_detection": "Automatic (normal)",
+                    "udp_scanner": "no",
+                    "svc_detection_on_all_ports": "yes",
+                    "detect_ssl": "yes",
+                    "ssl_prob_ports": "Known SSL ports",
+                    "enumerate_all_ciphers": "yes",
+                    "check_crl": "no",
+                    "report_paranoia": "Normal",
+                    "thorough_tests": "no",
+                    "av_grace_period": "0",
+                    "smtp_domain": "example.com",
+                    "smtp_from": "nobody@example.com",
+                    "smtp_to": "postmaster@[AUTO_REPLACED_IP]",
+                    "provided_creds_only": "yes",
+                    "test_default_oracle_accounts": "no",
+                    "scan_webapps": "no",
+                    "request_windows_domain_info": "yes",
+                    "enum_domain_users_start_uid": "1000",
+                    "enum_domain_users_end_uid": "1200",
+                    "enum_local_users_start_uid": "1000",
+                    "enum_local_users_end_uid": "1200",
+                    "win_known_bad_hashes": "",
+                    "win_known_good_hashes": "",
+                    "host_whitelist": "",
+                    "report_verbosity": "Normal",
+                    "report_superseded_patches": "no",
+                    "silent_dependencies": "yes",
+                    "allow_post_scan_editing": "yes",
+                    "reverse_lookup": "no",
+                    "log_live_hosts": "no",
+                    "display_unreachable_hosts": "no",
+                    "safe_checks": "yes",
+                    "log_whole_attack": "no",
+                    "stop_scan_on_disconnect": "no",
+                    "slice_network_addresses": "no",
+                    "reduce_connections_on_congestion": "no",
+                    "use_kernel_congestion_detection": "no",
+                    "network_receive_timeout": "5",
+                    "max_checks_per_host": "5",
+                    "max_hosts_per_scan": "20",
+                    "max_simult_tcp_sessions_per_host": "",
+                    "max_simult_tcp_sessions_per_scan": "",
+                    "ssh_known_hosts": "",
+                    "ssh_port": "22",
+                    "ssh_client_banner": "OpenSSH_5.0",
+                    "never_send_win_creds_in_the_clear": "yes",
+                    "dont_use_ntlmv1": "yes",
+                    "start_remote_registry": "no",
+                    "enable_admin_shares": "no",
+                    "apm_force_updates": "yes",
+                    "apm_update_timeout": "5",
+                    "http_login_method": "POST",
+                    "http_login_max_redir": "0",
+                    "http_login_invert_auth_regex": "no",
+                    "http_login_auth_regex_on_headers": "no",
+                    "http_login_auth_regex_nocase": "no",
+                    "snmp_port": "161",
+                    "additional_snmp_port1": "161",
+                    "additional_snmp_port2": "161",
+                    "additional_snmp_port3": "161",
+                    "patch_audit_over_telnet": "no",
+                    "patch_audit_over_rsh": "no",
+                    "patch_audit_over_rexec": "no",
+                    "aws_ui_region_type": "Rest of the World",
+                    "aws_us_east_1": "no",
+                    "aws_us_west_1": "no",
+                    "aws_us_west_2": "no",
+                    "aws_eu_west_1": "no",
+                    "aws_ap_northeast_1": "no",
+                    "aws_ap_southeast_1": "no",
+                    "aws_ap_southeast_2": "no",
+                    "aws_sa_east_1": "no",
+                    "aws_us_gov_west_1": "no",
+                    "aws_use_https": "yes",
+                    "aws_verify_ssl": "yes"
+                },
+                "credentials": {},
+                "plugins": {}
+            }
+            if self.settings is not None:
+                params = dict(params.items() + self.settings.items())
+            response = self._server._api_request("PUT", "/policies/%d" % self.id, params)
+            if response is None:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def delete(self):
+        """
+        Delete a policy.
+        Params:
+        Returns:
+        """
+        if self._server.server_version[0] == "5":
+            params = {
+                "policy_id": self.id
+            }
+            response = self._server._api_request("POST", "/policy/delete", params)
+            if response is not None:
+                return True
+            else:
+                return False
+        elif self._server.server_version[0] == "6":
+            response = self._server._api_request("DELETE", "/policies/%d" % self.id, "")
+            if response is None:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def details(self):
+        """
+        Returns details for the given policy.
+        Params:
+        Returns:
+        """
+        raise Exception("Not yet implemented.")
+
+    def _import(self):
+        """
+        Import an existing policy uploaded using Nessus.file (.nessus format only).
+        Params:
+        Returns:
+        """
+        raise Exception("Not yet implemented.")
+
+    def export(self, filename=None):
+        """
+        Export the given policy.
+        Params:
+        Returns:
+        """
+        if self._server.server_version[0] == "5":
+            if filename is None:
+                filename = "nessus_policy_%s.nessus" % self.name
+            response = self._server._request("GET", "/policy/download?policy_id=%d" % self.id, "")
+            with open(filename, "wb") as f:
+                f.write(response)
+            return filename
+        elif self._server.server_version[0] == "6":
+            raise Exception("Not yet implemented.")
+        else:
+            return False
+
+    def preferences(self):
+        """
+        Load and assign policy preferences
+        Params:
+            policy(Policy): policy instance
+        Returns:
+        """
+
+        if self._server.server_version[0] == "5":
+            params = {
+                "policy_id": self.id
+            }
+            response = self._server._api_request("POST", "/policy/list/plugins/preferences", params)
+            if response is not None:
+                self.preferences = []
+                if "preference" in response["pluginpreferences"]:
+                    for preference in response["pluginpreferences"]["preference"]:
+                        p = Preference()
+                        p.name = preference["name"]
+                        for value in preference["values"]:
+                            v = PreferenceValue()
+                            v.type = value["type"]
+                            v.name = value["name"]
+                            v.id = value["id"]
+                            p.values.append(v)
+                        self.preferences.append(p)
+                return True
+            else:
+                return False
+        else:
+            raise Exception("Not supported")
+
+
+    def plugins(self):
+        """
+        Load policy plugins
+        Params:
+        Returns:
+        """
+        if self._server.server_version[0] == "5":
+            params = {
+                "policy_id": self.id
+            }
+            response = self._server._api_request("POST", "/policy/list/families", params)
+            if response is not None:
+                if "family" in response["policyfamilies"]:
+                    families = []
+                    for family in response["policyfamilies"]["family"]:
+                        pf = self._server.PluginFamily()
+                        pf.name = family["name"]
+                        pf.id = family["id"]
+                        pf.plugin_count = family["plugin_count"]
+                        pf.status = family["status"]
+                        params2 = {
+                            "policy_id": self.id,
+                            "family_id": pf.id
+                        }
+                        response2 = self._api_request("POST", "/policy/list/plugins", params2)
+                        if response2 is not None:
+                            for plugin in response2["policyplugins"]["plugin"]:
+                                p = self._server.Plugin()
+                                p.name = plugin["pluginname"]
+                                p.filename = plugin["pluginfilename"]
+                                p.id = plugin["pluginid"]
+                                p.status = plugin["status"]
+                                pf.plugins.append(p)
+                        families.append(pf)
+                    self.plugins = families
+                return True
+            else:
+                return False
+        else:
+            raise Exception("Not supported.")
 
     @property
     def name(self):
         return self._name
 
     @name.setter
-    def name(self, name):
-        self._name = name
+    def name(self, value):
+        self._name = str(value)
 
     @property
     def description(self):
         return self._description
 
     @description.setter
-    def description(self, description):
-        self._description = description
+    def description(self, value):
+        self._description = str(value)
 
     @property
     def owner(self):
         return self._owner
 
     @owner.setter
-    def owner(self, owner):
-        self._owner = owner
+    def owner(self, value):
+        self._owner = str(value)
 
     @property
     def visibility(self):
         return self._visibility
 
     @visibility.setter
-    def visibility(self, visibility):
-        self._visibility = visibility
+    def visibility(self, value):
+        self._visibility = str(value)
 
     @property
     def shared(self):
         return self._shared
 
     @shared.setter
-    def shared(self, shared):
-        self._shared = shared
+    def shared(self, value):
+        self._shared = bool(value)
 
     @property
     def user_permissions(self):
         return self._user_permissions
 
     @user_permissions.setter
-    def user_permissions(self, user_permissions):
-        self._user_permissions = user_permissions
-
-    @property
-    def timestamp(self):
-        return self._timestamp
-
-    @timestamp.setter
-    def timestamp(self, timestamp):
-        self._timestamp = timestamp
+    def user_permissions(self, value):
+        self._user_permissions = int(value)
 
     @property
     def last_modification_date(self):
         return self._last_modification_date
 
     @last_modification_date.setter
-    def last_modification_date(self, last_modification_date):
-        self._last_modification_date = last_modification_date
+    def last_modification_date(self, value):
+        self._last_modification_date = int(value)
 
     @property
     def creation_date(self):
         return self._creation_date
 
     @creation_date.setter
-    def creation_date(self, creation_date):
-        self._creation_date = creation_date
+    def creation_date(self, value):
+        self._creation_date = int(value)
 
     @property
     def no_target(self):
         return self._no_target
 
     @no_target.setter
-    def no_target(self, no_target):
-        self._no_target = no_target
-
-    #BASIC
-    @property
-    def description(self):
-        return self._description
-
-    @description.setter
-    def description(self, description):
-        self._description = description
-
-    @property
-    def allow_post_scan_report_editing(self):
-        return self.allow_post_scan_report_editing
-
-    @allow_post_scan_report_editing.setter
-    def allow_post_scan_report_editing(self, allow_post_scan_report_editing):
-        self._allow_post_scan_report_editing = allow_post_scan_report_editing
-
-    # PORT SCANNING
-    @property
-    def port_scan_range(self):
-        return self._port_scan_range
-
-    @port_scan_range.setter
-    def port_scan_range(self, port_scan_range):
-        self._port_scan_range = port_scan_range
-
-    @property
-    def consider_unscanned_port_as_closed(self):
-        return self._consider_unscanned_port_as_closed
-
-    @consider_unscanned_port_as_closed.setter
-    def consider_unscanned_port_as_closed(self, consider_unscanned_port_as_closed):
-        self._consider_unscanned_port_as_closed = consider_unscanned_port_as_closed
-
-    @property
-    def nessus_snmp_scanner(self):
-        return self._nessus_snmp_scanner
-
-    @nessus_snmp_scanner.setter
-    def nessus_snmp_scanner(self, nessus_snmp_scanner):
-        self._nessus_snmp_scanner = nessus_snmp_scanner
-
-    @property
-    def netstat_port_scanner_ssh(self):
-        return self._netstat_port_scanner_ssh
-
-    @netstat_port_scanner_ssh.setter
-    def netstat_port_scanner_ssh(self, netstat_port_scanner_ssh):
-        self._netstat_port_scanner_ssh = netstat_port_scanner_ssh
-
-    @property
-    def ping_remote_host(self):
-        return self._ping_remote_host
-
-    @ping_remote_host.setter
-    def ping_remote_host(self, ping_remote_host):
-        self._ping_remote_host = ping_remote_host
-
-    @property
-    def netstat_port_scanner_wmi(self):
-        return self._netstat_port_scanner_wmi
-
-    @netstat_port_scanner_wmi.setter
-    def netstat_port_scanner_wmi(self, netstat_port_scanner_wmi):
-        self._netstat_port_scanner_wmi = netstat_port_scanner_wmi
-
-    @property
-    def nessus_tcp_scanner(self):
-        return self._nessus_tcp_scanner
-
-    @nessus_tcp_scanner.setter
-    def nessus_tcp_scanner(self, nessus_tcp_scanner):
-        self._nessus_tcp_scanner = nessus_tcp_scanner
-
-    @property
-    def nessus_syn_scanner(self):
-        return self._nessus_syn_scanner
-
-    @nessus_syn_scanner.setter
-    def nessus_syn_scanner(self, nessus_syn_scanner):
-        self._nessus_syn_scanner = nessus_syn_scanner
-
-    # PERFORMANCE
-
-    @property
-    def max_checks_per_host(self):
-        return self._max_checks_per_host
-
-    @max_checks_per_host.setter
-    def max_checks_per_host(self, max_checks_per_host):
-        self._max_checks_per_host = max_checks_per_host
-
-    @property
-    def max_hosts_per_scan(self):
-        return self._max_hosts_per_scan
-
-    @max_hosts_per_scan.setter
-    def max_hosts_per_scan(self, max_hosts_per_scan):
-        self._max_hosts_per_scan = max_hosts_per_scan
-
-    @property
-    def network_receive_timeout(self):
-        return self._network_receive_timeout
-
-    @network_receive_timeout.setter
-    def network_receive_timeout(self, network_receive_timeout):
-        self._network_receive_timeout = network_receive_timeout
-
-    @property
-    def max_simultaneous_tcp_sessions_per_host(self):
-        return self._max_simultaneous_tcp_sessions_per_host
-
-    @max_simultaneous_tcp_sessions_per_host.setter
-    def max_simultaneous_tcp_sessions_per_host(self, max_simultaneous_tcp_sessions_per_host):
-        self._max_simultaneous_tcp_sessions_per_host = max_simultaneous_tcp_sessions_per_host
-
-    @property
-    def max_simultaneous_tcp_sessions_per_scan(self):
-        return self._max_simultaneous_tcp_sessions_per_scan
-
-    @max_simultaneous_tcp_sessions_per_scan.setter
-    def max_simultaneous_tcp_sessions_per_scan(self, max_simultaneous_tcp_sessions_per_scan):
-        self._max_simultaneous_tcp_sessions_per_scan = max_simultaneous_tcp_sessions_per_scan
-
-    @property
-    def reduce_parallel_connections_on_congestion(self):
-        return self._reduce_parallel_connections_on_congestion
-
-    @reduce_parallel_connections_on_congestion.setter
-    def reduce_parallel_connections_on_congestion(self, reduce_parallel_connections_on_congestion):
-        self._reduce_parallel_connections_on_congestion = reduce_parallel_connections_on_congestion
-
-    @property
-    def use_kernel_congestion_detection(self):
-        return self._use_kernel_congestion_detection
-
-    @use_kernel_congestion_detection.setter
-    def use_kernel_congestion_detection(self, use_kernel_congestion_detection):
-        self._use_kernel_congestion_detection = use_kernel_congestion_detection
-
-    # ADVANCED
-    @property
-    def safe_checks(self):
-        return self._safe_checks
-
-    @safe_checks.setter
-    def safe_checks(self, safe_checks):
-        self._safe_checks = safe_checks
-
-    @property
-    def silent_dependencies(self):
-        return self._silent_dependencies
-
-    @silent_dependencies.setter
-    def silent_dependencies(self, silent_dependencies):
-        self._silent_dependencies = silent_dependencies
-
-    @property
-    def log_scan_details_to_server(self):
-        return self._log_scan_details_to_server
-
-    @log_scan_details_to_server.setter
-    def log_scan_details_to_server(self, log_scan_details_to_server):
-        self._log_scan_details_to_server = log_scan_details_to_server
-
-    @property
-    def stop_host_scan_on_disconnect(self):
-        return self._stop_host_scan_on_disconnect
-
-    @stop_host_scan_on_disconnect.setter
-    def stop_host_scan_on_disconnect(self, stop_host_scan_on_disconnect):
-        self._stop_host_scan_on_disconnect = stop_host_scan_on_disconnect
-
-    @property
-    def avoid_sequential_scan(self):
-        return self._avoid_sequential_scan
-
-    @avoid_sequential_scan.setter
-    def avoid_sequential_scan(self, avoid_sequential_scan):
-        self._avoid_sequential_scan = avoid_sequential_scan
-
-    @property
-    def designate_hosts_by_their_dns_name(self):
-        return self._designate_hosts_by_their_dns_name
-
-    @designate_hosts_by_their_dns_name.setter
-    def designate_hosts_by_their_dns_name(self, designate_hosts_by_their_dns_name):
-        self._designate_hosts_by_their_dns_name = designate_hosts_by_their_dns_name
+    def no_target(self, value):
+        self._no_target = bool(value)
 
     @property
     def settings(self):
@@ -374,68 +613,21 @@ class Policy(NessusObject):
 
     @settings.setter
     def settings(self, value):
-        self._settings = value
+        if type(value) is list:
+            self._settings = value
+        else:
+            raise Exception("Invalid format.")
 
     @property
     def preferences(self):
-        if self._preferences is None:
-            self.load_preferences()
         return self._preferences
 
     @preferences.setter
     def preferences(self, value):
-        self._preferences = value
-
-    @property
-    def plugins(self):
-        if self._plugins is None:
-            self.load_plugins()
-        return self._plugins
-
-    @plugins.setter
-    def plugins(self, value):
-        self._plugins = value
-
-class PluginFamily(object):
-
-    def __init__(self):
-        self._id = -1
-        self._name = None
-        self._plugin_count = 0
-        self._status = "enabled"
-        self._plugins = []
-
-    @property
-    def id(self):
-        return self._id
-
-    @id.setter
-    def id(self, value):
-        self._id = value
-
-    @property
-    def name(self):
-        return self._name
-
-    @name.setter
-    def name(self, value):
-        self._name = value
-
-    @property
-    def plugin_count(self):
-        return self._plugin_count
-
-    @plugin_count.setter
-    def plugin_count(self, value):
-        self._plugin_count = value
-
-    @property
-    def status(self):
-        return self._status
-
-    @status.setter
-    def status(self, value):
-        self._status = value
+        if type(value) is list:
+            self._preferences = value
+        else:
+            raise Exception("Invalid format.")
 
     @property
     def plugins(self):
@@ -443,52 +635,15 @@ class PluginFamily(object):
 
     @plugins.setter
     def plugins(self, value):
-        self._plugins = value
-
-
-class Plugin(object):
-
-    def __init__(self):
-        self._id = -1
-        self._name = None
-        self._filename = None
-        self._status = "enabled"
-
-    @property
-    def id(self):
-        return self._id
-
-    @id.setter
-    def id(self, value):
-        self._id = int(value)
-
-    @property
-    def name(self):
-        return self._name
-
-    @name.setter
-    def name(self, value):
-        self._name = value
-
-    @property
-    def filename(self):
-        return self._filename
-
-    @filename.setter
-    def filename(self, value):
-        self._filename = value
-
-    @property
-    def status(self):
-        return self._status
-
-    @status.setter
-    def status(self, value):
-        self._status = value
+        if type(value) is list:
+            self._plugins = value
+        else:
+            raise Exception("Invalid format.")
 
 
 class PreferenceValue(object):
     """
+    Policy preference value.
     """
     def __init__(self):
         self._id = -1
@@ -522,7 +677,7 @@ class PreferenceValue(object):
 
 class Preference(object):
     """
-
+    Policy preference instance.
     """
     def __init__(self):
 

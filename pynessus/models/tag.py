@@ -33,6 +33,87 @@ class Tag(NessusObject):
         self._custom = False
         self._unread_count = 0
 
+    def create(self):
+        """
+        Create a tag.
+        Params:
+        Returns:
+        """
+        if self._server.server_version[0] == "5":
+            params = {
+                "name": self.name
+            }
+            response = self._server._api_request("POST", "/tag/create", params)
+            if response is not None:
+                self.id = response["id"]
+                return True
+            else:
+                return False
+        elif self._server.server_version[0] == "6":
+            params = {
+                "name": self.name
+            }
+            response = self._server._api_request("POST", "/folders", params)
+            if response is not None:
+                self.id = response["id"]
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def edit(self):
+        """
+        Edit a tag.
+        Params:
+        Returns:
+        """
+        if self._server.server_version[0] == "5":
+            params = {
+                "tag_id": self.id,
+                "name": self.name
+            }
+            response = self._server._api_request("POST", "/tag/edit", params)
+            if response is not None:
+                return True
+            else:
+                return False
+        elif self._server.server_version[0] == "6":
+            params = {
+                "name": self.name
+            }
+            response = self._server._api_request("PUT", "/folders/%d" % self.id, params)
+            if response is None:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def delete(self):
+        """
+        Delete a tag.
+        Params:
+        Returns:
+        """
+        if self._server.server_version[0] == "5":
+            params = {
+                "tag_id": self.id
+            }
+            response = self._server._api_request("POST", "/tag/delete", params)
+            if response is not None:
+                return True
+            else:
+                return False
+        elif self._server.server_version[0] == "6":
+            response = self._server._api_request("DELETE", "/folders/%d" % self.id, "")
+            if response is None:
+                return True
+            else:
+                return False
+        else:
+            return False
+
     @property
     def default_tag(self):
         return self._default_tag
