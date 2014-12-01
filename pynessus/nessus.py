@@ -150,15 +150,14 @@ class Nessus(object):
         Returns:
             dict: parsed dict from json answer, None if no content.
         """
-        retries = 2
         if not params:
             params = {}
-        params['seq'] = randint(0, 1000)
         params['json'] = 1
-        response = json.loads(self._request(method, target, json.dumps(params)))
-        while "error" in response and retries:
+        for _ in range(3):
             response = json.loads(self._request(method, target, json.dumps(params)))
-            retries -= 1
+            if not "error" in response:
+                break
+
         if "error" in response:
             raise NessusAPIError(response["error"])
         elif response['reply']['status'] == "OK":
