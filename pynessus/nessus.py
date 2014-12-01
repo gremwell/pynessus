@@ -1233,10 +1233,14 @@ class Nessus(object):
         response = self._api_request("POST", "/result/export", {"id": report.id, "format": _format})
         if response is not None:
             rid = response["file"]
-            response = self._api_request("POST", "/result/export/status", {"rid": rid})
+            response = None
             while response is None or response["status"] != "ready":
-                sleep(5)
-                response = self._api_request("POST", "/result/export/status", {"rid": rid})
+                try:
+                    response = self._api_request("POST", "/result/export/status", {"rid": rid})
+                    sleep(5)
+                except NessusAPIError as e:
+                    if e.message == "The requested file was not found":
+                        continue
             response = self._request("GET", "/result/export/download?rid=%d" % rid, "")
             report.content = response
             report.format = _format
