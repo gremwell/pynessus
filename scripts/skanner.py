@@ -7,6 +7,15 @@ from datetime import datetime
 
 from pynessus import Nessus
 
+
+class Colors(object):
+    N = '\033[m' # native
+    R = '\033[31m' # red
+    G = '\033[32m' # green
+    O = '\033[33m' # orange
+    B = '\033[34m' # blue
+
+
 class Skanner(object):
 
     def __init__(self, configfile):
@@ -34,64 +43,63 @@ class Skanner(object):
 
     def run(self, options):
 
-        if options.scan_name is None:
-            self.error("Scan name not provided. Aborting.")
-            return
-        if options.policy_name is None:
-            self.error("Policy name not provided. Aborting.")
-            return
+        try:
+            if options.scan_name is None:
+                raise Exception("Scan name not provided. Aborting.")
+            if options.policy_name is None:
+                raise Exception("Policy name not provided. Aborting.")
 
-        if options.targets_file is not None:
-            with open(options.targets_file, "rb") as f:
-                targets = f.read().replace("\n", ",")
-        elif options.targets is not None:
-            targets = options.targets
-        else:
-            self.error("No provided targets. Aborting.")
-
-        nessus = Nessus(self.config.get('core', 'server'), self.config.get('core', 'port'))
-        user = nessus.User(self.config.get('core', 'user'), self.config.get('core', 'password'))
-        if nessus.login(user):
-            self.info("Successfully logged in.")
-            nessus.load_policies()
-            nessus.load_tags()
-            scan = nessus.Scan()
-            scan.name = options.scan_name
-            scan.tag = nessus.tags[0]
-            # does the provided policy exists ?
-            for policy in nessus.policies:
-                if policy.name == options.policy_name:
-                    scan.policy = policy
-            if scan.policy:
-                scan.custom_targets = targets
-                if scan.launch():
-                    # scan launched, monitoring progress ...
-                    self.info("Scan has been launched, waiting for completion...")
-                    print "[+] Scan has been launched, waiting for completion..."
-                    status, percentage = scan.progress()
-                    while status == "running":
-                        sys.stdout.write("[+] Current progress : %0.2f%%\r" % percentage)
-                        sys.stdout.flush()
-                        status, percentage = scan.progress()
-                        time.sleep(5)
-                    if scan.status == "completed":
-                        r = nessus.Report()
-                        r.id = scan.uuid
-                        path = r.download()
-                        if path is not None:
-                            self.info("Report downloaded to %s" % path)
-                        else:
-                            self.error("An error occured while downloading report %s." % r.id)
-                    else:
-                        self.error("Can't download report because scan status is %s." % scan.status)
-                else:
-                    self.error("An error occured when launching the scan.")
+            if options.targets_file is not None:
+                with open(options.targets_file, "rb") as f:
+                    targets = f.read().replace("\n", ",")
+            elif options.targets is not None:
+                targets = options.targets
             else:
-                self.error("Can't find the policy named %s. Aborting." % options.policy_name)
-            nessus.logout()
-        else:
-            self.error("[!] An error occured while logging you in.")
+                raise Exception("No provided targets. Aborting.")
 
+            nessus = Nessus(self.config.get('core', 'server'), self.config.get('core', 'port'))
+            user = nessus.User(self.config.get('core', 'user'), self.config.get('core', 'password'))
+            if nessus.login(user):
+                self.info("Successfully logged in.")
+                nessus.load_policies()
+                nessus.load_tags()
+                scan = nessus.Scan()
+                scan.name = options.scan_name
+                scan.tag = nessus.tags[0]
+                # does the provided policy exists ?
+                for policy in nessus.policies:
+                    if policy.name == options.policy_name:
+                        scan.policy = policy
+                if scan.policy:
+                    scan.custom_targets = targets
+                    if scan.launch():
+                        # scan launched, monitoring progress ...
+                        self.info("Scan has been launched, waiting for completion...")
+                        while scan.status != "completed" and scan.status != "canceled":
+                            sys.stdout.write("%s[Status: %s]%s %0.2f%%\r" % (Colors.O, scan.status, Colors.N, scan.progress))
+                            sys.stdout.flush()
+                            time.sleep(5)
+                        if scan.status == "completed":
+                            r = nessus.Report()
+                            r.id = scan.uuid
+                            path = r.download()
+                            if path is not None:
+                                self.info("Report downloaded to %s" % path)
+                            else:
+                                raise Exception("An error occured while downloading report %s." % r.id)
+                        else:
+                            raise Exception("Scan has been canceled.")
+                    else:
+                        raise Exception("An error occured when launching the scan.")
+                else:
+                    raise Exception("Can't find the policy named %s. Aborting." % options.policy_name)
+                nessus.logout()
+            else:
+                raise Exception("An error occured while logging you in.")
+        except Exception as e:
+            print e.message
+            self.error(e.message)
+            sys.exit(-1)
 
     def debug(self, msg):
         """
@@ -105,6 +113,7 @@ class Skanner(object):
         @type   msg:    string
         @param  msg:    Info message to be written to the log.
         """
+        print('%s[*]%s %s' % (Colors.G, Colors.N, msg))
         self.logger.info(self.logformat % (datetime.now(), 'INFO', msg))
 
     def warning(self, msg):
@@ -112,6 +121,7 @@ class Skanner(object):
         @type   msg:    string
         @param  msg:    Warning message to be written to the log.
         """
+        print('%s[#] %s%s' % (Colors.O, msg, Colors.N))
         self.logger.warning(self.logformat % (datetime.now(), 'WARNING', msg))
 
     def error(self, msg):
@@ -119,6 +129,7 @@ class Skanner(object):
         @type   msg:    string
         @param  msg:    Error message to be written to the log.
         """
+        print('%s[!] %s%s' % (Colors.R, msg, Colors.N))
         self.logger.info(self.logformat % (datetime.now(), 'ERROR', msg))
 
     def critical(self, msg):
@@ -126,6 +137,7 @@ class Skanner(object):
         @type   msg:    string
         @param  msg:    Critical message to be written to the log.
         """
+        print('%s[!] %s%s' % (Colors.R, msg, Colors.N))
         self.logger.critical(self.logformat % (datetime.now(), 'CRITICAL', msg))
 
 if __name__ == "__main__":

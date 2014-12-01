@@ -40,6 +40,7 @@ class Scan(NessusObject):
         self._creation_date = 0
         self._user_permissions = 0
         self._default_permissions = 0
+        self._progress = 0
         self._owner = None
         self._shared = False
         self._type = None
@@ -68,9 +69,14 @@ class Scan(NessusObject):
         if self._id is not None:
             return self._server.stop_scan(self)
 
+    @property
     def progress(self):
         if self._id is not None:
             return self._server.get_scan_progress(self)
+
+    @progress.setter
+    def progress(self, value):
+        self._progress = value
 
     def diff(self, dscan):
         if self._id is not None:
@@ -78,7 +84,7 @@ class Scan(NessusObject):
 
     @property
     def status(self):
-        return self._status
+        return self._server.get_scan_status(self)
 
     @status.setter
     def status(self, status):

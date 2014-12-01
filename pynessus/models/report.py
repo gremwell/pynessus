@@ -93,7 +93,7 @@ class Report(NessusObject):
         if self._id is not None:
             self._server.load_report(self, fmt)
             if filename is None:
-                filename = "%s.%s" % (self._name, self._format)
+                filename = "%s.%s" % (self._id, self._format)
             with open(filename, "wb") as f:
                 f.write(self.content)
             return filename

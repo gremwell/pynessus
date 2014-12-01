@@ -155,15 +155,10 @@ class Nessus(object):
         params['seq'] = randint(0, 1000)
         params['json'] = 1
         response = json.loads(self._request(method, target, json.dumps(params)))
-        if self.server_version[0] == "5":
-            if "error" in response:
-                raise NessusAPIError(response["error"])
-            elif response['reply']['status'] == "OK":
-                return response["reply"]["contents"]
-            else:
-                return None
-        elif self.server_version[0] == "6":
-            return response
+        if "error" in response:
+            raise NessusAPIError(response["error"])
+        elif response['reply']['status'] == "OK":
+            return response["reply"]["contents"]
         else:
             return None
 
@@ -203,45 +198,22 @@ class Nessus(object):
             bool: True if successful login, False otherwise.
         Raises:
         """
-        if self.server_version[0] == 5:
-            params = {'login': user.username, 'password': user.password}
-            response = self._api_request("POST", "/login", params)
-            if response is not None:
-                self._user = user
-                self._user.token = response['token']
-                self._user.admin = True if response['user']['admin'] == "TRUE" else False
-                self._scanner_boottime = response['scanner_boottime']
-                self._idle_timeout = response['idle_timeout']
-                self._plugin_set = response['plugin_set']
-                self._loaded_plugin_set = response["loaded_plugin_set"]
-                self._uuid = response['server_uuid']
-                # Persist token value for subsequent requests
-                self._headers["Cookie"] = "token=%s" % (response['token'])
-                return True
-            else:
-                return False
+        params = {'login': user.username, 'password': user.password}
+        response = self._api_request("POST", "/login", params)
+        if response is not None:
+            self._user = user
+            self._user.token = response['token']
+            self._user.admin = True if response['user']['admin'] == "TRUE" else False
+            self._scanner_boottime = response['scanner_boottime']
+            self._idle_timeout = response['idle_timeout']
+            self._plugin_set = response['plugin_set']
+            self._loaded_plugin_set = response["loaded_plugin_set"]
+            self._uuid = response['server_uuid']
+            # Persist token value for subsequent requests
+            self._headers["Cookie"] = "token=%s" % (response['token'])
+            return True
         else:
-            params = {'username': user.username, 'password': user.password}
-            response = self._api_request("POST", "/session", params)
-            if response is not None:
-                self._user = user
-                self._user.token = response['token']
-                # Persist token value for subsequent requests
-                self._headers["X-Cookie"] = 'token=%s' % (response['token'])
-                response2 = self._api_request("GET", "/session")
-                if response2 is not None:
-                    self._headers["Cookie"] += \
-                        ';nessus-info="%s";' % base64.b64encode(
-                            '{"username":"%s","userID":%d,"id":%d,"permissions":%d,"type":"%s","fullname":"%s"}' % (
-                                response2['username'], int(response2['id']), int(response2['id']),
-                                int(response2['permissions']), response2['type'], response2['name'])
-                        )
-
-                return True
-            else:
-                return False
-
-
+            return False
 
     def logout(self):
         """
@@ -249,15 +221,13 @@ class Nessus(object):
         Returns:
             bool: True if successful login, False otherwise.
         """
-        if self.server_version[0] == "5":
-            response = self._api_request("POST", "/logout")
-            if response == "OK":
-                return True
-            else:
-                return False
-        else:
-            self._api_request("DELETE", "/session")
+
+        response = self._api_request("POST", "/logout")
+        if response == "OK":
             return True
+        else:
+            return False
+
 
     def load(self):
         """
@@ -343,38 +313,19 @@ class Nessus(object):
         Returns:
             bool: True if successful login, False otherwise.
         """
-        if self.server_version[0] == "5":
-            response = self._api_request("POST", "/tag/list")
-            if response is not None:
-                self._tags = []
-                for result in response['tags']:
-                    tag = self.Tag()
-                    tag.id = result["id"]
-                    tag.type = result["type"] if "type" in result else "local"
-                    tag.custom = result["custom"]
-                    tag.default_tag = result["default_tag"]
-                    tag.name = result["name"]
-                    tag.unread_count = result["unread_count"] if "unread_count" in result else 0
-                    self._tags.append(tag)
-                return True
-            else:
-                return False
-        elif self.server_version[0] == "6":
-            response = self._api_request("GET", "/folders")
-            if "folders" in response:
-                self._tags = []
-                for result in response["folders"]:
-                    tag = self.Tag()
-                    tag.id = result["id"]
-                    tag.type = result["type"] if "type" in result else "local"
-                    tag.custom = result["custom"]
-                    tag.default_tag = result["default_tag"]
-                    tag.name = result["name"]
-                    tag.unread_count = result["unread_count"] if "unread_count" in result else 0
-                    self._tags.append(tag)
-                return True
-            else:
-                return False
+        response = self._api_request("POST", "/tag/list")
+        if response is not None:
+            self._tags = []
+            for result in response['tags']:
+                tag = self.Tag()
+                tag.id = result["id"]
+                tag.type = result["type"] if "type" in result else "local"
+                tag.custom = result["custom"]
+                tag.default_tag = result["default_tag"]
+                tag.name = result["name"]
+                tag.unread_count = result["unread_count"] if "unread_count" in result else 0
+                self._tags.append(tag)
+            return True
         else:
             return False
 
@@ -385,37 +336,14 @@ class Nessus(object):
         Returns:
             bool: True if successful login, False otherwise.
         """
-        if self.server_version[0] == "5":
-            response = self._api_request("POST", "/policy/list/policies")
-            if response is not None:
-                if "policy" in response["policies"]:
-                    self._policies = []
-                    for result in response['policies']["policy"]:
-                        policy = self.Policy()
-                        policy.id = result["id"]
-                        policy.db_id = result["db_id"]
-                        policy.name = result["name"]
-                        policy.owner = result["owner"]
-                        policy.creation_date = result["creation_date"]
-                        policy.no_target = result["no_target"] if "no_target" in result else False
-                        policy.visibility = result["visibility"]
-                        policy.shared = result["shared"]
-                        policy.user_permissions = result["user_permissions"]
-                        policy.timestamp = result["timestamp"]
-                        policy.last_modification_date = result["last_modification_date"]
-                        policy.creation_date = result["creation_date"]
-                        policy.object_id = result["object_id"]
-                        self._policies.append(policy)
-                return True
-            else:
-                return False
-        elif self.server_version[0] == "6":
-            response = self._api_request("GET", "/policies")
-            if "policies" in response:
+        response = self._api_request("POST", "/policy/list/policies")
+        if response is not None:
+            if "policy" in response["policies"]:
                 self._policies = []
-                for result in response['policies']:
+                for result in response['policies']["policy"]:
                     policy = self.Policy()
                     policy.id = result["id"]
+                    policy.db_id = result["db_id"]
                     policy.name = result["name"]
                     policy.owner = result["owner"]
                     policy.creation_date = result["creation_date"]
@@ -423,12 +351,14 @@ class Nessus(object):
                     policy.visibility = result["visibility"]
                     policy.shared = result["shared"]
                     policy.user_permissions = result["user_permissions"]
+                    policy.timestamp = result["timestamp"]
                     policy.last_modification_date = result["last_modification_date"]
                     policy.creation_date = result["creation_date"]
+                    policy.object_id = result["object_id"]
                     self._policies.append(policy)
-                return True
-            else:
-                return False
+            return True
+        else:
+            return False
 
 
     def load_users(self):
@@ -438,38 +368,19 @@ class Nessus(object):
         Returns:
             bool: True if successful login, False otherwise.
         """
-        if self.server_version[0] == "5":
-            response = self._api_request("POST", "/user/list")
-            if response is not None:
-                self._users = []
-                for result in response["user"]:
-                    user = self.User()
-                    user.last_login = result["lastlogin"]
-                    user.permissions = result["permissions"]
-                    user.type = result["type"]
-                    user.name = result["name"]
-                    user.username = result["username"]
-                    user.id = result["id"]
-                    self._users.append(user)
-                return True
-            else:
-                return False
-        elif self.server_version[0] == "6":
-            response = self._api_request("GET", "/users")
-            if "users" in response:
-                self._users = []
-                for result in response["users"]:
-                    user = self.User()
-                    user.last_login = result["lastlogin"]
-                    user.permissions = result["permissions"]
-                    user.type = result["type"]
-                    user.name = result["name"]
-                    user.username = result["username"]
-                    user.id = result["id"]
-                    self._users.append(user)
-                return True
-            else:
-                return False
+        response = self._api_request("POST", "/user/list")
+        if response is not None:
+            self._users = []
+            for result in response["user"]:
+                user = self.User()
+                user.last_login = result["lastlogin"]
+                user.permissions = result["permissions"]
+                user.type = result["type"]
+                user.name = result["name"]
+                user.username = result["username"]
+                user.id = result["id"]
+                self._users.append(user)
+            return True
         else:
             return False
 
@@ -481,25 +392,19 @@ class Nessus(object):
         Returns:
             bool: True if successful login, False otherwise.
         """
-        if self.server_version[0] == "5":
-            response = self._api_request("POST", "/report/list")
-            if response is not None:
-                if "report" in response["reports"]:
-                    self._reports = []
-                    for result in response["reports"]["report"]:
-                        r = self.Report()
-                        r.id = result["name"]
-                        r.name = result["name"]
-                        r.readable_name = result["readableName"]
-                        r.status = result["status"]
-                        r.timestamp = result["timestamp"]
-                        self._reports.append(r)
-                return True
-            else:
-                return False
-        elif self.server_version[0] == "6":
-            response = self._api_request("GET", "/reports")
-            print response
+        response = self._api_request("POST", "/report/list")
+        if response is not None:
+            if "report" in response["reports"]:
+                self._reports = []
+                for result in response["reports"]["report"]:
+                    r = self.Report()
+                    r.id = result["name"]
+                    r.name = result["name"]
+                    r.readable_name = result["readableName"]
+                    r.status = result["status"]
+                    r.timestamp = result["timestamp"]
+                    self._reports.append(r)
+            return True
         else:
             return False
 
@@ -1322,7 +1227,7 @@ class Nessus(object):
         Returns:
             bool: True if successful, False otherwise.
         """
-        response = self._api_request("POST", "/result/export", {"id": report.name, "format": _format})
+        response = self._api_request("POST", "/result/export", {"id": report.id, "format": _format})
         if response is not None:
             rid = response["file"]
             response = self._api_request("POST", "/result/export/status", {"rid": rid})
@@ -1337,31 +1242,34 @@ class Nessus(object):
             return False
 
     def get_scan_progress(self, scan):
+        """
+        Get the scan progress (expressed in percentages).
+        Params:
+            scan(Scan):
+        Returns:
+        """
         params = {"id" : scan.uuid}
         response = self._api_request("POST", "/result/details", params)
-        scan.status = response["info"]["status"]
         current = 0.0
-        total = 0.0 if len(response["hosts"]) else 1.0
+        total = 0.0
         for host in response["hosts"]:
             current += host["scanprogresscurrent"]
             total += host["scanprogresstotal"]
-        return scan.status, current/total*100.0
+        return current/(total if total else 1.0)*100.0
 
-    @property
-    def server_version(self):
-        if self._server_version is None:
-            print "Getting server version..."
-            if self._request("GET", "/nessus6.html", "") is not None:
-                self.server_version = "6.x"
-            elif self._request("GET", "/html5.html", "") is not None:
-                self.server_version = "5.x"
-            else:
-                self.server_version = "unknown"
-        return self._server_version
+    def get_scan_status(self, scan):
+        """
+        Get the scan status (i.e. running, completed, paused, stopped)
+        Params:
+            scan(Scan):
+        Returns:
+            string: current scan status
+        """
+        params = {"id" : scan.uuid}
+        response = self._api_request("POST", "/result/details", params)
+        scan.status = response["info"]["status"]
+        return response["info"]["status"]
 
-    @server_version.setter
-    def server_version(self, value):
-        self._server_version = value
 
     @property
     def scans(self):
