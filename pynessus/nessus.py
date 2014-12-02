@@ -167,7 +167,6 @@ class Nessus(object):
             response = json.loads(self._request(method, target, json.dumps(params)))
             if not "error" in response:
                 break
-        response = json.loads(self._request(method, target, json.dumps(params)))
         if self.server_version[0] == "5":
             if "error" in response:
                 raise NessusAPIError(response["error"])
@@ -239,7 +238,10 @@ class Nessus(object):
             #TODO: add session creation and management
             params = {'username': user.username, 'password': user.password}
             response = self._api_request("POST", "/session", params)
+
             if response is not None:
+                if "status" in response:
+                    raise Exception(response["status"])
                 self._user = user
                 self._user.token = response['token']
                 # Persist token value for subsequent requests
@@ -513,7 +515,6 @@ class Nessus(object):
                 users = []
                 for result in response["user"]:
                     user = self.User()
-                    user.last_login = result["lastlogin"]
                     user.permissions = result["permissions"]
                     user.type = result["type"]
                     user.name = result["name"]
@@ -554,14 +555,13 @@ class Nessus(object):
             raise Exception("This file does not exist.")
         else:
             content_type, body = self._encode(filename)
-            if self.server_version[0] == 5:
+            if self.server_version[0] == "5":
                 headers = dict()
                 headers["Content-type"] = content_type
                 headers["Accept"] = "application/json"
                 headers["Cookie"] = self._headers["Cookie"]
                 response = self._request("POST", "/file/upload", body, headers)
                 root = parseString(response.replace("\n", ""))
-
                 if root.getElementsByTagName("reply")[0].getElementsByTagName("status")[0].firstChild.data == "OK":
                     return True
                 else:
@@ -577,44 +577,44 @@ class Nessus(object):
             else:
                 return False
 
-    #TODO : fix this shit!
-    def load_report(self, report, _format="nessus.v2"):
+    def get_scan_progress(self, scan):
         """
-        Download a report.
+        Get the scan progress (expressed in percentages).
         Params:
-            report(Report): report instance to be downloaded.
-            format(string): report format (nessus.v2, html, csv, pdf, nessusdb)
+            scan(Scan):
         Returns:
-            bool: True if successful, False otherwise.
         """
-        response = self._api_request("POST", "/result/export", {"id": report.id, "format": _format})
-        if response is not None:
-            rid = response["file"]
-            response = None
-            while response is None or response["status"] != "ready":
-                try:
-                    response = self._api_request("POST", "/result/export/status", {"rid": rid})
-                    sleep(5)
-                except NessusAPIError as e:
-                    if e.message == "The requested file was not found":
-                        continue
-            response = self._request("GET", "/result/export/download?rid=%d" % rid, "")
-            report.content = response
-            report.format = _format
-            return True
-        else:
-            return False
+        params = {"id" : scan.uuid}
+        response = self._api_request("POST", "/result/details", params)
+        current = 0.0
+        total = 0.0
+        for host in response["hosts"]:
+            current += host["scanprogresscurrent"]
+            total += host["scanprogresstotal"]
+        return current/(total if total else 1.0)*100.0
 
+    def get_scan_status(self, scan):
+        """
+        Get the scan status (i.e. running, completed, paused, stopped)
+        Params:
+            scan(Scan):
+        Returns:
+            string: current scan status
+        """
+        params = {"id" : scan.uuid}
+        response = self._api_request("POST", "/result/details", params)
+        scan.status = response["info"]["status"]
+        return response["info"]["status"]
 
     @property
     def server_version(self):
         if self._server_version is None:
             if "404 File not found" not in self._request("GET", "/nessus6.html", ""):
-                self.server_version = "6.x"
+                self._server_version = "6.x"
             elif self._request("GET", "/html5.html", "") is not None:
-                self.server_version = "5.x"
+                self._server_version = "5.x"
             else:
-                self.server_version = "unknown"
+                self._server_version = "unknown"
         return self._server_version
 
     @property
