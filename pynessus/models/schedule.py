@@ -155,7 +155,7 @@ class Schedule(Scan):
         else:
             return False
 
-    def update_schedule(self, schedule):
+    def edit(self):
         """
         Update a schedule.
         Params:
@@ -164,53 +164,53 @@ class Schedule(Scan):
             bool: True if successful, False otherwise.
         """
         params = {
-            "schedule_id": schedule.id,
-            "name": schedule.name,
-            "description": schedule.description,
-            "tag_id": schedule.tag.id,
-            "rrules": schedule.rrules,
-            "starttime": schedule.starttime,
-            "timezone": schedule.timezone,
-            "custom_targets": schedule.custom_targets,
-            "emails": schedule.emails,
-            "notification_filter_type": schedule.notification_filter_type,
-            "notification_filters": schedule.notification_filters,
-            "policy_id": schedule.policy.object_id
+            "schedule_id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "tag_id": self.tag.id,
+            "rrules": self.rrules,
+            "starttime": self.starttime,
+            "timezone": self.timezone,
+            "custom_targets": self.custom_targets,
+            "emails": self.emails,
+            "notification_filter_type": self.notification_filter_type,
+            "notification_filters": self.notification_filters,
+            "policy_id": self.policy.object_id
         }
-        response = self._api_request("POST", "/schedule/edit", params)
+        response = self._server._api_request("POST", "/schedule/edit", params)
         if response is not None:
             template = response["template"]
-            schedule.uuid = template["uuid"]
-            schedule.name = template["name"]
-            schedule.description = template["description"]
-            schedule.scanner = template["scanner_id"]
-            schedule.emails = template["emails"]
-            schedule.custom_targets = template["custom_targets"]
-            schedule.starttime = template["starttime"]
-            schedule.rrules = template["rrules"]
-            schedule.timezone = template["timezone"]
-            schedule.notification_filter_type = template["notification_filter_type"]
-            schedule.shared = template["shared"]
-            schedule.user_permissions = template["user_permissions"]
-            schedule.default_permissions = template["default_permisssions"]
-            schedule.last_modification_date = template["last_modification_date"]
-            schedule.creation_date = template["creation_date"]
-            schedule.type = template["type"]
-            schedule.id = template["id"]
-            for tag in self.tags:
+            self.uuid = template["uuid"]
+            self.name = template["name"]
+            self.description = template["description"]
+            self.scanner = template["scanner_id"]
+            self.emails = template["emails"]
+            self.custom_targets = template["custom_targets"]
+            self.starttime = template["starttime"]
+            self.rrules = template["rrules"]
+            self.timezone = template["timezone"]
+            self.notification_filter_type = template["notification_filter_type"]
+            self.shared = template["shared"]
+            self.user_permissions = template["user_permissions"]
+            self.default_permissions = template["default_permisssions"]
+            self.last_modification_date = template["last_modification_date"]
+            self.creation_date = template["creation_date"]
+            self.type = template["type"]
+            self.id = template["id"]
+            for tag in self._server.tags:
                 if tag.id == template["tag_id"]:
-                    schedule.tag = tag
-            for user in self.users:
+                    self.tag = tag
+            for user in self._server.users:
                 if user.id == template["owner_id"]:
-                    schedule.owner = user
-            for policy in self.policies:
+                    self.owner = user
+            for policy in self._server.policies:
                 if policy.id == template["policy_id"]:
-                    schedule.policy = policy
+                    self.policy = policy
             return True
         else:
             return False
 
-    def delete_schedule(self, schedule):
+    def delete(self):
         """
         Delete a schedule.
         Params:
@@ -219,10 +219,10 @@ class Schedule(Scan):
             bool: True if successful, False otherwise.
         """
         params = {
-            "schedule_id": schedule.id
+            "schedule_id": self.id
         }
 
-        response = self._api_request("POST", "/schedule/delete", params)
+        response = self._server._api_request("POST", "/schedule/delete", params)
         if response is not None:
             return True
         else:
