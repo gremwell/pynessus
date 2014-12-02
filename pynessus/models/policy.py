@@ -275,7 +275,7 @@ class Policy(NessusObject):
             response = self._server._api_request("POST", "/policy/update", params)
             if response is not None:
                 self.id = response["metadata"]["id"]
-                for user in self.users:
+                for user in self._server.users:
                     if user.name == response["metadata"]["owner"]:
                         self.owner = user
                 self.visibility = response["metadata"]["visibility"]
