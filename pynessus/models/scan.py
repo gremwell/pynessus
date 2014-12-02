@@ -55,37 +55,6 @@ class Scan(NessusObject):
         self._remediations = None
         self._hosts = None
 
-<<<<<<< HEAD
-=======
-    def launch(self):
-        return self._server.create_scan(self)
-
-    def pause(self):
-        if self._id is not None:
-            return self._server.pause_scan(self)
-
-    def resume(self):
-        if self._id is not None:
-            return self._server.resume_scan(self)
-
-    def stop(self):
-        if self._id is not None:
-            return self._server.stop_scan(self)
-
-    @property
-    def progress(self):
-        if self._id is not None:
-            return self._server.get_scan_progress(self)
-
-    @progress.setter
-    def progress(self, value):
-        self._progress = value
-
-    def diff(self, dscan):
-        if self._id is not None:
-            return self._server.load_scan_diff(self, dscan)
-
->>>>>>> dev
     @property
     def status(self):
         return self._server.get_scan_status(self)
