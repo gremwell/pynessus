@@ -13,7 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+<<<<<<< HEAD
 from httplib import HTTPSConnection, CannotSendRequest, ImproperConnectionState
+=======
+from httplib import HTTPSConnection, CannotSendRequest, ImproperConnectionState, HTTPException
+import hashlib
+import base64
+>>>>>>> dev
 from random import randint
 import os
 import json
@@ -79,6 +85,7 @@ class Nessus(object):
         # managing multiple user sessions
         self._user = None
 
+<<<<<<< HEAD
         self._schedules = []
         self._policies = []
         self._templates = []
@@ -93,6 +100,21 @@ class Nessus(object):
             "Content-type": "application/json",
             "Accept": "application/json"
         }
+=======
+        self._schedules = None
+        self._policies = None
+        self._scans = None
+        self._tags = None
+        self._users = None
+        self._notifications = None
+        self._reports = None
+
+        self._headers = {
+            "Content-type": "application/json",
+            "Accept": "application/json",
+            "Cookie": 'csrftoken="%s";nessus-session="null";sessionid="%s";token="";' % (hashlib.md5("pynessus").hexdigest(),
+                                                                                hashlib.md5("pynessus_").hexdigest())}
+>>>>>>> dev
 
     def Scan(self):
         return Scan(self)
@@ -163,8 +185,8 @@ class Nessus(object):
         """
         if not params:
             params = {}
-        params['seq'] = randint(0, 1000)
         params['json'] = 1
+<<<<<<< HEAD
         response = json.loads(self._request(method, target, json.dumps(params)))
         if self.server_version[0] == "5":
             if "error" in response:
@@ -177,6 +199,17 @@ class Nessus(object):
             if response is not None and "error" in response:
                 raise NessusAPIError(response["error"])
             return response
+=======
+        for _ in range(3):
+            response = json.loads(self._request(method, target, json.dumps(params)))
+            if not "error" in response:
+                break
+
+        if "error" in response:
+            raise NessusAPIError(response["error"])
+        elif response['reply']['status'] == "OK":
+            return response["reply"]["contents"]
+>>>>>>> dev
         else:
             return None
 
@@ -254,18 +287,30 @@ class Nessus(object):
         Returns:
             bool: True if successful login, False otherwise.
         """
+<<<<<<< HEAD
         if self.server_version[0] == "5":
             response = self._api_request("POST", "/logout")
             if response == "OK":
                 return True
             else:
                 return False
+=======
+
+        response = self._api_request("POST", "/logout")
+        if response == "OK":
+            return True
+>>>>>>> dev
         else:
             self._api_request("DELETE", "/session")
             return True
 
+<<<<<<< HEAD
     @property
     def status(self):
+=======
+
+    def load(self):
+>>>>>>> dev
         """
         Return the Nessus server status.
         Params:
@@ -497,6 +542,7 @@ class Nessus(object):
                 return False
 
 
+
     def load_users(self):
         """
         Load Nessus server's users.
@@ -504,8 +550,273 @@ class Nessus(object):
         Returns:
             bool: True if successful login, False otherwise.
         """
+<<<<<<< HEAD
         if self.server_version[0] == "5":
             response = self._api_request("POST", "/user/list")
+=======
+        response = self._api_request("POST", "/user/list")
+        if response is not None:
+            self._users = []
+            for result in response["user"]:
+                user = self.User()
+                user.last_login = result["lastlogin"]
+                user.permissions = result["permissions"]
+                user.type = result["type"]
+                user.name = result["name"]
+                user.username = result["username"]
+                user.id = result["id"]
+                self._users.append(user)
+            return True
+        else:
+            return False
+
+
+    def load_reports(self):
+        """
+        Load Nessus server's reports.
+        Params:
+        Returns:
+            bool: True if successful login, False otherwise.
+        """
+        response = self._api_request("POST", "/report/list")
+        if response is not None:
+            if "report" in response["reports"]:
+                self._reports = []
+                for result in response["reports"]["report"]:
+                    r = self.Report()
+                    r.id = result["name"]
+                    r.name = result["name"]
+                    r.readable_name = result["readableName"]
+                    r.status = result["status"]
+                    r.timestamp = result["timestamp"]
+                    self._reports.append(r)
+            return True
+        else:
+            return False
+
+    def create_user(self, user):
+        """
+        Create a new user.
+        Params:
+            user(User): a user instance that will be created.
+        Returns:
+            bool: True if successful, False otherwise.
+        """
+        params = {
+            "login": user.username,
+            "permissions": user.permissions,
+            "type": user.type,
+            "password": user.password
+        }
+        response = self._api_request("POST", "/user/add", params)
+        if response is not None:
+            user.name = response["name"]
+            user.permissions = response["permissions"]
+            user.id = response["id"]
+            return True
+        else:
+            return False
+
+    def update_user(self, user):
+        """
+        Update a user.
+        Params:
+            user(User): a user instance that will be updated.
+        Returns:
+            bool: True if successful, False otherwise.
+        """
+        params = {
+            "user_id": user.id,
+            "login": user.username,
+            "permissions": user.permissions,
+            "type": user.type,
+            "password": user.password
+        }
+        response = self._api_request("POST", "/user/edit", params)
+        if response is not None:
+            user.name = response["name"]
+            user.permissions = response["permissions"]
+            user.id = response["id"]
+            return True
+        else:
+            return False
+
+    def delete_user(self, user):
+        """
+        Delete a user.
+        Params:
+            user(User): a user instance that will be deleted.
+        Returns:
+            bool: True if successful, False otherwise.
+        """
+        params = {
+            "user_id": user.id
+        }
+        response = self._api_request("POST", "/user/delete", params)
+        if response is not None:
+            return True
+        else:
+            return False
+
+    def create_scan(self, scan):
+        """
+        Create and launch a new scan.
+        Params:
+            scan(Scan): a scan instance that will be launched.
+        Returns:
+            bool: True if successful, False otherwise.
+        """
+        params = {
+            'policy_id': scan.policy.object_id,
+            'name': scan.name,
+            'tag_id': scan.tag.id,
+            'custom_targets': scan.custom_targets
+        }
+        if scan.target_file_name is not None:
+            params['target_file_name'] = scan.target_file_name
+
+        response = self._api_request("POST", "/scan/new", params)
+        if response is not None:
+            scan.id = response["scan"]["id"]
+            scan.uuid = response["scan"]["uuid"]
+            scan.status = response["scan"]["status"]
+            scan.start_time = response["scan"]["start_time"]
+            for user in self.users:
+                if user.name == response["scan"]["owner"]:
+                    scan.owner = user
+            return True
+        else:
+            return False
+
+    def pause_scan(self, scan):
+        """
+        Pause a running scan.
+        Params:
+            scan(Scan): a scan instance that will be paused.
+        Returns:
+            bool: True if successful, False otherwise.
+        """
+        params = {
+            'scan_uuid': scan.uuid
+        }
+        response = self._api_request("POST", "/scan/pause", params)
+        if response is not None:
+            return True
+        else:
+            return False
+
+    def resume_scan(self, scan):
+        """
+        Resume a paused scan.
+        Params:
+            scan(Scan): a scan instance that will be resumed.
+        Returns:
+            bool: True if successful, False otherwise.
+        """
+        params = {
+            'scan_uuid': scan.uuid
+        }
+        response = self._api_request("POST", "/scan/resume", params)
+        if response is not None:
+            return True
+        else:
+            return False
+
+    def stop_scan(self, scan):
+        """
+        Stop a running scan.
+        Params:
+            scan(Scan): a scan instance that will be stopped.
+        Returns:
+            bool: True if successful, False otherwise.
+        """
+        params = {
+            'scan_uuid': scan.uuid
+        }
+        response = self._api_request("POST", "/scan/stop", params)
+        if response is not None:
+            return True
+        else:
+            return False
+
+    def move_scan(self, scan, tag):
+        """
+        Move a scan from a tag to another.
+        Params:
+            scan(Scan): A scan instance.
+            tag(Tag): The tag where the scan will be placed.
+        Returns:
+            bool: True if successful, False otherwise.
+        """
+        params = {
+            'id': scan.uuid,
+            'tags': tag.id
+        }
+        response = self._api_request("POST", "/tag/replace", params)
+        if response is not None:
+            return True
+        else:
+            return False
+
+    def delete_scan(self, scan):
+        """
+        Delete a scan.
+        Params:
+            scan(Scan): a scan instance that will be stopped.
+        Returns:
+            bool: True if successful, False otherwise.
+        """
+        params = {
+            'id': scan.uuid
+        }
+        response = self._api_request("POST", "/result/delete", params)
+        if response is not None:
+            return True
+        else:
+            return False
+
+    def set_scan_status(self, scan, status="read"):
+        """
+        Modify the scan status (read, unread).
+        Params:
+            scan(Scan): scan instance
+            status(string): scan status (i.e. read, unread)
+        Returns:
+            bool: True if successful, False otherwise.
+        """
+        params = {
+            'id': scan.uuid,
+            'status': status
+        }
+        response = self._api_request("POST", "/result/status/set", params)
+        if response is not None:
+            return True
+        else:
+            return False
+
+    def load_scan_diff(self, scan1, scan2):
+        """
+        Create a diff report between scan1 and scan2.
+        Params:
+            scan1(Scan): first scan instance
+            scan2(Scan): second scan instance
+        Returns:
+            bool: True if successful, False otherwise.
+        """
+        params = {
+            'report1': scan1.id,
+            'report2': scan2.id
+        }
+        response = self._api_request("POST", "/result/diff", params)
+        if response is not None:
+            scan = self.Scan()
+            scan.uuid = response["report"]
+            params = {
+                "id": scan.uuid,
+                "status": "read"
+            }
+            response = self._api_request("POST", "/result/status/set", params)
+>>>>>>> dev
             if response is not None:
                 users = []
                 for result in response["user"]:
@@ -584,13 +895,17 @@ class Nessus(object):
         Returns:
             bool: True if successful, False otherwise.
         """
-        response = self._api_request("POST", "/result/export", {"id": report.name, "format": _format})
+        response = self._api_request("POST", "/result/export", {"id": report.id, "format": _format})
         if response is not None:
             rid = response["file"]
-            response = self._api_request("POST", "/result/export/status", {"rid": rid})
+            response = None
             while response is None or response["status"] != "ready":
-                sleep(5)
-                response = self._api_request("POST", "/result/export/status", {"rid": rid})
+                try:
+                    response = self._api_request("POST", "/result/export/status", {"rid": rid})
+                    sleep(5)
+                except NessusAPIError as e:
+                    if e.message == "The requested file was not found":
+                        continue
             response = self._request("GET", "/result/export/download?rid=%d" % rid, "")
             report.content = response
             report.format = _format
@@ -598,6 +913,7 @@ class Nessus(object):
         else:
             return False
 
+<<<<<<< HEAD
     @property
     def server_version(self):
         if self._server_version is None:
@@ -608,13 +924,42 @@ class Nessus(object):
             else:
                 self.server_version = "unknown"
         return self._server_version
+=======
+    def get_scan_progress(self, scan):
+        """
+        Get the scan progress (expressed in percentages).
+        Params:
+            scan(Scan):
+        Returns:
+        """
+        params = {"id" : scan.uuid}
+        response = self._api_request("POST", "/result/details", params)
+        current = 0.0
+        total = 0.0
+        for host in response["hosts"]:
+            current += host["scanprogresscurrent"]
+            total += host["scanprogresstotal"]
+        return current/(total if total else 1.0)*100.0
 
-    @server_version.setter
-    def server_version(self, value):
-        self._server_version = value
+    def get_scan_status(self, scan):
+        """
+        Get the scan status (i.e. running, completed, paused, stopped)
+        Params:
+            scan(Scan):
+        Returns:
+            string: current scan status
+        """
+        params = {"id" : scan.uuid}
+        response = self._api_request("POST", "/result/details", params)
+        scan.status = response["info"]["status"]
+        return response["info"]["status"]
+>>>>>>> dev
+
 
     @property
     def scans(self):
+        if self._scans is None:
+            self.load_scans()
         return self._scans
 
     @property
@@ -623,18 +968,26 @@ class Nessus(object):
 
     @property
     def policies(self):
+        if self._policies is None:
+            self.load_policies()
         return self._policies
 
     @property
     def users(self):
+        if self._users is None:
+            self.load_users()
         return self._users
 
     @property
     def tags(self):
+        if self._tags is None:
+            self.load_tags()
         return self._tags
 
     @property
     def reports(self):
+        if self._reports is None:
+            self.load_reports()
         return self._reports
 
     @property
