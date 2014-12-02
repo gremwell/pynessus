@@ -78,13 +78,13 @@ class Nessus(object):
         #managing multiple user sessions
         self._user = None
 
-        self._schedules = []
-        self._policies = []
-        self._scans = []
-        self._tags = []
-        self._users = []
-        self._notifications = []
-        self._reports = []
+        self._schedules = None
+        self._policies = None
+        self._scans = None
+        self._tags = None
+        self._users = None
+        self._notifications = None
+        self._reports = None
 
         self._headers = {
             "Content-type": "application/json",
@@ -1280,6 +1280,8 @@ class Nessus(object):
 
     @property
     def scans(self):
+        if self._scans is None:
+            self.load_scans()
         return self._scans
 
     @property
@@ -1288,18 +1290,26 @@ class Nessus(object):
 
     @property
     def policies(self):
+        if self._policies is None:
+            self.load_policies()
         return self._policies
 
     @property
     def users(self):
+        if self._users is None:
+            self.load_users()
         return self._users
 
     @property
     def tags(self):
+        if self._tags is None:
+            self.load_tags()
         return self._tags
 
     @property
     def reports(self):
+        if self._reports is None:
+            self.load_reports()
         return self._reports
 
     @policies.setter
