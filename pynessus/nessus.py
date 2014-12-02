@@ -577,35 +577,6 @@ class Nessus(object):
             else:
                 return False
 
-    def get_scan_progress(self, scan):
-        """
-        Get the scan progress (expressed in percentages).
-        Params:
-            scan(Scan):
-        Returns:
-        """
-        params = {"id" : scan.uuid}
-        response = self._api_request("POST", "/result/details", params)
-        current = 0.0
-        total = 0.0
-        for host in response["hosts"]:
-            current += host["scanprogresscurrent"]
-            total += host["scanprogresstotal"]
-        return current/(total if total else 1.0)*100.0
-
-    def get_scan_status(self, scan):
-        """
-        Get the scan status (i.e. running, completed, paused, stopped)
-        Params:
-            scan(Scan):
-        Returns:
-            string: current scan status
-        """
-        params = {"id" : scan.uuid}
-        response = self._api_request("POST", "/result/details", params)
-        scan.status = response["info"]["status"]
-        return response["info"]["status"]
-
     @property
     def server_version(self):
         if self._server_version is None:

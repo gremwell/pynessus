@@ -57,11 +57,39 @@ class Scan(NessusObject):
 
     @property
     def status(self):
-        return self._server.get_scan_status(self)
+        """
+        Get the scan status (i.e. running, completed, paused, stopped)
+        Params:
+            scan(Scan):
+        Returns:
+            string: current scan status
+        """
+        params = {"id": self.uuid}
+        response = self._server._api_request("POST", "/result/details", params)
+        self.status = response["info"]["status"]
+        return response["info"]["status"]
 
     @status.setter
     def status(self, status):
         self._status = status
+
+    @property
+    def progress(self):
+        """
+        Get the scan progress (expressed in percentages).
+        Params:
+            scan(Scan):
+        Returns:
+        """
+        params = {"id" : self.uuid}
+        response = self._server._api_request("POST", "/result/details", params)
+        current = 0.0
+        total = 0.0
+        for host in response["hosts"]:
+            current += host["scanprogresscurrent"]
+            total += host["scanprogresstotal"]
+        return current/(total if total else 1.0)*100.0
+
 
     @property
     def name(self):
