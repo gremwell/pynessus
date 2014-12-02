@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
+from time import sleep
 from nessusobject import NessusObject
 
 class Scan(NessusObject):
@@ -284,7 +284,7 @@ class Scan(NessusObject):
                 self.id = response["scan"]["id"]
                 self.uuid = response["scan"]["uuid"]
                 self.status = response["scan"]["status"]
-                for user in self.users:
+                for user in self._server.users:
                     if user.name == response["scan"]["owner"]:
                         self.owner = user
                 return True
@@ -333,7 +333,7 @@ class Scan(NessusObject):
         """
         if self._server.server_version[0] == "5":
             params = {
-                'scan_uuid': self.uuid
+                'id': self.uuid
             }
             response = self._server._api_request("POST", "/result/delete", params)
             if response is not None:
@@ -365,21 +365,49 @@ class Scan(NessusObject):
         """
         return
 
-    def download(self):
+    def download(self, filename=None, fmt="nessus.v2"):
         """
         Download an exported scan.
         Params:
         Returns:
         """
-        return
+        if self._server.server_version[0] == "5":
+            rid = self.export(fmt)
+            if rid is not None:
+                response = self._server._request("GET", "/result/export/download?rid=%d" % rid, "")
+                if filename is None:
+                    filename = "%s.%s" % (self._uuid, fmt)
+                with open(filename, "wb") as f:
+                    f.write(response)
+                return filename
+            else:
+                return None
+        else:
+            raise Exception("Not yet implemented.")
 
-    def export(self):
+    def export(self, fmt):
         """
         Export the given scan.
         Params:
         Returns:
         """
-        return
+        if self._server.server_version[0] == "5":
+            response = self._server._api_request("POST", "/result/export", {"id": self.uuid, "format": fmt})
+            if response is not None:
+                rid = response["file"]
+                response = None
+                while response is None or response["status"] != "ready":
+                    try:
+                        response = self._server._api_request("POST", "/result/export/status", {"rid": rid})
+                        sleep(5)
+                    except Exception as e:
+                        if e.message == "The requested file was not found":
+                           continue
+                return rid
+            else:
+                return None
+        else:
+            raise Exception("Not yet implemented.")
 
     def export_status(self):
         """
@@ -433,7 +461,7 @@ class Scan(NessusObject):
         Params:
         Returns:
         """
-
+        return self.create()
 
     def pause(self):
         """
