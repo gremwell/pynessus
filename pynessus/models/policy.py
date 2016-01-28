@@ -247,7 +247,6 @@ class Policy(NessusObject):
         else:
             return False
 
-
     def edit(self):
         """
         Edit a policy.
@@ -483,7 +482,6 @@ class Policy(NessusObject):
                 return False
         else:
             raise Exception("Not supported")
-
 
     def plugins(self):
         """
