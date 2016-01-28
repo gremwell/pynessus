@@ -39,6 +39,15 @@ class Demo(Framework):
             self.info("TAGS")
             for tag in nessus.tags:
                 self.alert("\t%s" % tag.name)
+            self.info("MAIL SETTINGS")
+            self.alert("\t%s" % nessus.mail.smtp_host)
+            self.alert("\t%s" % nessus.mail.smtp_port)
+            self.alert("\t%s" % nessus.mail.smtp_www_host)
+            self.alert("\t%s" % nessus.mail.smtp_auth)
+            self.alert("\t%s" % nessus.mail.smtp_user)
+            self.alert("\t%s" % nessus.mail.smtp_pass)
+            self.alert("\t%s" % nessus.mail.smtp_enc)
+
             if nessus.logout():
                 self.info("Successfully logged out.")
         else:

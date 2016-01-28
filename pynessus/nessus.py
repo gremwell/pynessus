@@ -29,6 +29,8 @@ from models.host import Host
 from models.scanner import Scanner
 from models.agent import Agent
 from models.agentgroup import AgentGroup
+from models.mail import Mail
+
 
 class NessusAPIError(Exception):
     pass
@@ -74,6 +76,8 @@ class Nessus(object):
         self._scanner_boottime = None
         self._server_version = None
         self._feed = None
+
+        self._mail = None
 
         # managing multiple user sessions
         self._user = None
@@ -134,6 +138,9 @@ class Nessus(object):
 
     def Template(self):
         return Template(self)
+
+    def Mail(self):
+        return Mail(self)
 
     def _request(self, method, target, params, headers=None):
         """
@@ -308,6 +315,7 @@ class Nessus(object):
         """
         success = True
         success &= self.load_properties()
+        success &= self.load_mail()
         success &= self.load_scanners()
         success &= self.load_agents()
         success &= self.load_policies()
@@ -391,6 +399,10 @@ class Nessus(object):
             return True
         else:
             return False
+
+    def load_mail(self):
+        self._mail = self.Mail()
+        return self._mail.load()
 
     def load_templates(self):
         """
@@ -755,6 +767,10 @@ class Nessus(object):
     def templates(self):
         return self._templates
 
+    @property
+    def mail(self):
+        return self._mail
+
     @policies.setter
     def policies(self, value):
         self._policies = value
@@ -795,3 +811,10 @@ class Nessus(object):
     @agentgroups.setter
     def agentgroups(self, value):
         self._agentgroups = value
+
+    @mail.setter
+    def mail(self, value):
+        if isinstance(value, Mail):
+            self._mail = value
+        else:
+            raise Exception("Not a Mail object")
