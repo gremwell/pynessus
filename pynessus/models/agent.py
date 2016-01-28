@@ -47,6 +47,25 @@ class Agent(NessusObject):
         """
         return
 
+    def delete(self):
+        """
+        Delete the agent instance.
+        Params:
+        Returns:
+        """
+        if self._server.server_version[0] == "6":
+            response = self._server._api_request(
+                "DELETE",
+                "/scanners/%d/agents/%d" % (self._scanner_id, self.id),
+                ""
+            )
+            if response is not None:
+                return True
+            else:
+                return False
+        else:
+            raise Exception("Not supported.")
+
     @property
     def id(self):
         return self._id
