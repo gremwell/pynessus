@@ -28,7 +28,7 @@ from models.template import Template
 from models.host import Host
 from models.scanner import Scanner
 from models.agent import Agent
-
+from models.agentgroup import AgentGroup
 
 class NessusAPIError(Exception):
     pass
@@ -79,6 +79,7 @@ class Nessus(object):
         self._user = None
 
         self._agents = []
+        self._agentgroups = []
         self._schedules = []
         self._policies = []
         self._templates = []
@@ -97,6 +98,9 @@ class Nessus(object):
 
     def Agent(self):
         return Agent(self)
+
+    def AgentGroup(self):
+        return AgentGroup(self)
 
     def Scan(self):
         return Scan(self)
@@ -335,6 +339,30 @@ class Nessus(object):
                         agent.uuid = a["uuid"]
                         agent.scanner_id = scanner.id
                         self._agents.append(agent)
+            return True
+        else:
+            raise Exception("Agents are not supported by Nessus version < 6.x .")
+
+    def load_agentgrous(self):
+        """
+
+        :return:
+        """
+        if self.server_version[0] == "6":
+            for scanner in self._scanners:
+                response = self._api_request("GET", "/scanners/%d/agent-groups" % scanner.id)
+                if "groups" in response and response["groups"] is not None:
+                    for g in response["groups"]:
+                        group = self.AgentGroup()
+                        group.id = g["id"]
+                        group.name = g["name"]
+                        group.owner_id = g["owner_id"]
+                        group.owner = g["owner"]
+                        group.shared = g["shared"]
+                        group.user_permissions = g["user_permissions"]
+                        group.creation_date = g["creation_date"]
+                        group.last_modification_date = g["last_modification_date"]
+                        self._agentgroups.append(group)
             return True
         else:
             raise Exception("Agents are not supported by Nessus version < 6.x .")
@@ -678,6 +706,12 @@ class Nessus(object):
         return self._agents
 
     @property
+    def agentgroups(self):
+        if self._agentgroups is None:
+            self.load_agentgrous()
+        return self._agentgroups
+
+    @property
     def scanners(self):
         if self._scanners is None:
             self.load_scanners()
@@ -757,3 +791,7 @@ class Nessus(object):
     @agents.setter
     def agents(self, value):
         self._agents = value
+
+    @agentgroups.setter
+    def agentgroups(self, value):
+        self._agentgroups = value

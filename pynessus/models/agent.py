@@ -20,7 +20,15 @@ class Agent(NessusObject):
 
     Attributes:
         id(int): identification
-        name(str): group's name
+        distros(str) :
+        ip(str):
+        last_scanned(int):
+        name(str): agent's name
+        platform(str):
+        token(str):
+        uuid(str):
+        scanner_id(int):
+
     _Google Python Style Guide:
     http://google-styleguide.googlecode.com/svn/trunk/pyguide.html
     """

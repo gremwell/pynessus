@@ -21,6 +21,9 @@ class Demo(Framework):
             self.info("AGENTS")
             for agent in nessus.agents:
                 self.alert("\t%s %s" % (agent.id, agent.name))
+            self.info("AGENT GROUPS")
+            for group in nessus.agentgroups:
+                self.alert("\t%s %s" % (group.id, group.name))
             self.info("SCANS")
             for scan in nessus.scans:
                 self.alert("\t%s - %s" % (scan.id, scan.name))
