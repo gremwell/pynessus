@@ -17,8 +17,6 @@ from httplib import HTTPSConnection, CannotSendRequest, ImproperConnectionState
 import os
 import json
 from xml.dom.minidom import parseString
-from time import sleep
-
 from models.scan import Scan
 from models.schedule import Schedule
 from models.tag import Tag
@@ -28,6 +26,7 @@ from models.user import User
 from models.folder import Folder
 from models.template import Template
 from models.host import Host
+
 
 
 class NessusAPIError(Exception):
@@ -147,8 +146,10 @@ class Nessus(object):
             self.login(self._user)
             self._request(method, target, params, self._headers)
         response = self._connection.getresponse()
-
-        return response.read()
+        if response.status == 200:
+            return response.read()
+        else:
+            raise Exception(response.read())
 
     def _api_request(self, method, target, params=None):
         """
@@ -265,7 +266,7 @@ class Nessus(object):
             else:
                 return False
         else:
-            self._api_request("DELETE", "/session")
+            self._request("DELETE", "/session", [])
             return True
 
     @property
@@ -286,9 +287,25 @@ class Nessus(object):
         else:
             return "unknown"
 
+    def load(self):
+        """
+        Load Nessus.
+        Returns:
+            bool: True if successful login, False otherwise.
+        """
+        success = True
+        success &= self.load_properties()
+        success &= self.load_policies()
+        success &= self.load_scans()
+        success &= self.load_folders()
+        success &= self.load_tags()
+        success &= self.load_templates()
+        success &= self.load_users()
+        return success
+
     def load_properties(self):
         """
-        Log Nessus server properties.
+        Load Nessus server properties.
         Returns:
             bool: True if successful login, False otherwise.
         """
@@ -307,7 +324,6 @@ class Nessus(object):
             self._idle_timeout = response["idle_timeout"]
             self._scanner_boottime = response["scanner_boottime"]
             self._server_version = response["server_version"]
-            self._feed = response["feed"]
             return True
         else:
             return False
@@ -367,6 +383,7 @@ class Nessus(object):
                         scan.shared = result["shared"]
                         scan.type = result["type"]
                         scan.id = result["id"]
+                        scan.uuid = s["id"]
                         for user in self.users:
                             if user.id == result["owner_id"]:
                                 scan.owner = user
@@ -387,7 +404,8 @@ class Nessus(object):
                     scan.creation_date = s["creation_date"]
                     scan.user_permissions = s["user_permissions"]
                     scan.shared = s["shared"]
-                    scan.id = s["id"]
+                    scan.id = s["uuid"]
+                    scan.uuid = s["uuid"]
                     for user in self.users:
                         if user.id == s["owner_id"]:
                             scan.owner = user
@@ -481,8 +499,9 @@ class Nessus(object):
                 return False
         elif self.server_version[0] == "6":
             response = self._api_request("GET", "/policies")
-            if "policies" in response:
+            if "policies" in response and response["policies"] is not None:
                 self._policies = []
+                print response
                 for result in response['policies']:
                     policy = self.Policy()
                     policy.id = result["id"]
@@ -537,11 +556,13 @@ class Nessus(object):
                     user.username = result["username"]
                     user.id = result["id"]
                     users.append(user)
-                return users
+                self._users = users
+                return True
             else:
                 return False
         else:
             return False
+
 
     def upload_file(self, filename):
         """

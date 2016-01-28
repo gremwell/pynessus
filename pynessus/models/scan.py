@@ -15,6 +15,15 @@ limitations under the License.
 from time import sleep
 from nessusobject import NessusObject
 
+REPORT_CHAPTERS = [
+    "vuln_hosts_summary",
+    "vuln_by_host",
+    "compliance_exec",
+    "remediations",
+    "vuln_by_plugin",
+    "compliance"
+]
+
 class Scan(NessusObject):
     """
     A Nessus Scan instance.
@@ -393,7 +402,7 @@ class Scan(NessusObject):
         """
         return
 
-    def download(self, filename=None, fmt="nessus.v2"):
+    def download(self, filename=None, fmt="nessus", password=None, chapters=";".join(REPORT_CHAPTERS)):
         """
         Download an exported scan.
         Params:
@@ -410,6 +419,34 @@ class Scan(NessusObject):
                 return filename
             else:
                 return None
+
+        elif self._server.server_version[0] == "6":
+            response = self._server._api_request("GET", "/scans", "")
+            self._scans = []
+            if "scans" in response and response["scans"] is not None:
+                for s in response["scans"]:
+                    r_response = self._server._api_request(
+                        "POST",
+                        "/scans/%d/export" % s["id"],
+                        {"format": fmt, "password": password, chapters: ";".join(REPORT_CHAPTERS)}
+                    )
+                    if "file" in r_response:
+                        status = None
+                        while status != "ready":
+                            content = self._server._api_request(
+                                "GET", "/scans/%d/export/%d/status" % (s["id"], r_response["file"]))
+                            if content is not None:
+                                print content["status"]
+                                status = content["status"]
+                            sleep(1)
+                        content = self._server._request("GET", "/scans/%d/export/%d/download" % (s["id"], r_response["file"]), "")
+                        if filename is None:
+                            filename = "%s_%s.%s" % (self._name, self._uuid, fmt)
+                        with open(filename, "wb") as f:
+                            f.write(content)
+                        return filename
+                    else:
+                        return None
         else:
             raise Exception("Not yet implemented.")
 
