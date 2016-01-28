@@ -36,6 +36,7 @@ class Agent(NessusObject):
         self._platform = None
         self._token = None
         self._uuid = None
+        self._scanner_id = None
 
     @staticmethod
     def list():
@@ -101,3 +102,11 @@ class Agent(NessusObject):
     @token.setter
     def token(self, value):
         self._token = str(value)
+
+    @property
+    def scanner_id(self):
+        return self._scanner_id
+
+    @scanner_id.setter
+    def scanner_id(self, value):
+        self._scanner_id = int(value)

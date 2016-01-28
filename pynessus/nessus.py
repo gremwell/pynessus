@@ -333,6 +333,7 @@ class Nessus(object):
                         agent.platform = a["platform"]
                         agent.token = a["token"]
                         agent.uuid = a["uuid"]
+                        agent.scanner_id = scanner.id
                         self._agents.append(agent)
             return True
         else:
