@@ -73,11 +73,11 @@ class Agent(NessusObject):
 
     @property
     def ip(self):
-        return self._type
+        return self._ip
 
     @ip.setter
     def ip(self, value):
-        self._type = str(ip)
+        self._ip = str(value)
 
     @property
     def last_scanned(self):
