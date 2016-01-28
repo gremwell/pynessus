@@ -26,7 +26,8 @@ from models.user import User
 from models.folder import Folder
 from models.template import Template
 from models.host import Host
-
+from models.scanner import Scanner
+from models.agent import Agent
 
 
 class NessusAPIError(Exception):
@@ -77,6 +78,7 @@ class Nessus(object):
         # managing multiple user sessions
         self._user = None
 
+        self._agents = []
         self._schedules = []
         self._policies = []
         self._templates = []
@@ -86,11 +88,15 @@ class Nessus(object):
         self._users = []
         self._notifications = []
         self._reports = []
+        self._scanners = []
 
         self._headers = {
             "Content-type": "application/json",
             "Accept": "application/json"
         }
+
+    def Agent(self):
+        return Agent(self)
 
     def Scan(self):
         return Scan(self)
@@ -109,6 +115,9 @@ class Nessus(object):
 
     def Schedule(self):
         return Schedule(self)
+
+    def Scanner(self):
+        return Scanner(self)
 
     def User(self, username=None, password=None):
         return User(self, username, password)
@@ -295,6 +304,8 @@ class Nessus(object):
         """
         success = True
         success &= self.load_properties()
+        success &= self.load_scanners()
+        success &= self.load_agents()
         success &= self.load_policies()
         success &= self.load_scans()
         success &= self.load_folders()
@@ -302,6 +313,30 @@ class Nessus(object):
         success &= self.load_templates()
         success &= self.load_users()
         return success
+
+    def load_agents(self):
+        """
+
+        :return:
+        """
+        if self.server_version[0] == "6":
+            for scanner in self._scanners:
+                response = self._api_request("GET", "/scanners/%d/agents" % scanner.id)
+                if "agents" in response and response["agents"] is not None:
+                    for a in response["agents"]:
+                        agent = self.Agent()
+                        agent.distros = a["distros"]
+                        agent.id = a["id"]
+                        agent.ip = a["ip"]
+                        agent.last_scanned = a["last_scanned"]
+                        agent.name = a["name"]
+                        agent.platform = a["platform"]
+                        agent.token = a["token"]
+                        agent.uuid = a["uuid"]
+                        self._agents.append(agent)
+            return True
+        else:
+            raise Exception("Agents are not supported by Nessus version < 6.x .")
 
     def load_properties(self):
         """
@@ -353,6 +388,32 @@ class Nessus(object):
         else:
             raise Exception("Templates are not supported by Nessus version < 6.x .")
 
+    def load_scanners(self):
+        """
+
+        :return:
+        """
+        if self.server_version[0] == "6":
+            response = self._api_request("GET", "/scanners")
+            if "scanners" in response:
+                for s in response["scanners"]:
+                    scanner = self.Scanner()
+                    scanner.id = s["id"]
+                    scanner.uuid = s["uuid"]
+                    scanner.name = s["name"]
+                    scanner.type = s["type"]
+                    scanner.status = s["status"]
+                    scanner.scan_count = s["scan_count"]
+                    scanner.engine_version = s["engine_version"]
+                    scanner.platform = s["platform"]
+                    scanner.loaded_plugin_set = s["loaded_plugin_set"]
+                    scanner.registration_code = s["registration_code"]
+                    scanner.owner = s["owner"]
+                    self._scanners.append(scanner)
+            return True
+        else:
+            raise Exception("Agents are not supported by Nessus version < 6.x .")
+
     def load_scans(self, tag_id=None):
         """
         Load Nessus server's scans. Load scans from a specific tag if tag_id is provided.
@@ -383,7 +444,7 @@ class Nessus(object):
                         scan.shared = result["shared"]
                         scan.type = result["type"]
                         scan.id = result["id"]
-                        scan.uuid = s["id"]
+                        scan.uuid = result["id"]
                         for user in self.users:
                             if user.id == result["owner_id"]:
                                 scan.owner = user
@@ -610,6 +671,18 @@ class Nessus(object):
         return self._server_version
 
     @property
+    def agents(self):
+        if self._agents is None:
+            self.load_agents()
+        return self._agents
+
+    @property
+    def scanners(self):
+        if self._scanners is None:
+            self.load_scanners()
+        return self._scanners
+
+    @property
     def scans(self):
         if self._scans is None:
             self.load_scans()
@@ -674,3 +747,12 @@ class Nessus(object):
     @templates.setter
     def templates(self, value):
         self._templates = value
+
+
+    @scanners.setter
+    def scanners(self, value):
+        self._scanners = value
+
+    @agents.setter
+    def agents(self, value):
+        self._agents = value

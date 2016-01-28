@@ -15,6 +15,12 @@ class Demo(Framework):
         if nessus.login(user):
             self.info("Successfully logged in, getting informations ...")
             nessus.load()
+            self.info("SCANNERS")
+            for scanner in nessus.scanners:
+                self.alert("\t%s %s" % (scanner.id, scanner.name))
+            self.info("AGENTS")
+            for agent in nessus.agents:
+                self.alert("\t%s %s" % (agent.id, agent.name))
             self.info("SCANS")
             for scan in nessus.scans:
                 self.alert("\t%s - %s" % (scan.id, scan.name))
