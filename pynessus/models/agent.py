@@ -46,15 +46,6 @@ class Agent(NessusObject):
         self._uuid = None
         self._scanner_id = None
 
-    @staticmethod
-    def list():
-        """
-        Returns the agents list.
-        Params:
-        Returns:
-        """
-        return
-
     def delete(self):
         """
         Delete the agent instance.

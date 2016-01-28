@@ -52,15 +52,6 @@ class Policy(NessusObject):
         self._preferences = None
         self._plugins = None
 
-    @staticmethod
-    def list():
-        """
-        Returns the policy list.
-        Params:
-        Returns:
-        """
-        return
-
     def configure(self):
         """
         Changes the parameters of a policy.

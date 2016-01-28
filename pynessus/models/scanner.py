@@ -126,12 +126,3 @@ class Scanner(NessusObject):
     @owner.setter
     def owner(self, value):
         self._owner = str(value)
-
-    @staticmethod
-    def list():
-        """
-        Returns the scanner list.
-        Params:
-        Returns:
-        """
-        return

@@ -122,7 +122,6 @@ class User(NessusObject):
         else:
             return False
 
-
     def delete(self):
         """
         Delete a user.
