@@ -30,7 +30,7 @@ from models.scanner import Scanner
 from models.agent import Agent
 from models.agentgroup import AgentGroup
 from models.mail import Mail
-
+from models.permission import Permission
 
 class NessusAPIError(Exception):
     pass
@@ -94,6 +94,7 @@ class Nessus(object):
         self._notifications = []
         self._reports = []
         self._scanners = []
+        self._permissions = []
 
         self._headers = {
             "Content-type": "application/json",
@@ -141,6 +142,9 @@ class Nessus(object):
 
     def Mail(self):
         return Mail(self)
+
+    def Permission(self):
+        return Permission(self)
 
     def _request(self, method, target, params, headers=None):
         """
@@ -318,6 +322,7 @@ class Nessus(object):
         success &= self.load_mail()
         success &= self.load_scanners()
         success &= self.load_agents()
+        success &= self.load_agentgroups()
         success &= self.load_policies()
         success &= self.load_scans()
         success &= self.load_folders()
@@ -351,7 +356,7 @@ class Nessus(object):
         else:
             raise Exception("Agents are not supported by Nessus version < 6.x .")
 
-    def load_agentgrous(self):
+    def load_agentgroups(self):
         """
 
         :return:
@@ -374,6 +379,7 @@ class Nessus(object):
             return True
         else:
             raise Exception("Agents are not supported by Nessus version < 6.x .")
+
 
     def load_properties(self):
         """
