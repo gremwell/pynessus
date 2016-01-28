@@ -31,6 +31,8 @@ from models.agent import Agent
 from models.agentgroup import AgentGroup
 from models.mail import Mail
 from models.permission import Permission
+from models.proxy import Proxy
+
 
 class NessusAPIError(Exception):
     pass
@@ -78,6 +80,7 @@ class Nessus(object):
         self._feed = None
 
         self._mail = None
+        self._proxy = None
 
         # managing multiple user sessions
         self._user = None
@@ -145,6 +148,9 @@ class Nessus(object):
 
     def Permission(self):
         return Permission(self)
+
+    def Proxy(self):
+        return Proxy(self)
 
     def _request(self, method, target, params, headers=None):
         """
@@ -320,6 +326,7 @@ class Nessus(object):
         success = True
         success &= self.load_properties()
         success &= self.load_mail()
+        success &= self.load_proxy()
         success &= self.load_scanners()
         success &= self.load_agents()
         success &= self.load_agentgroups()
@@ -409,6 +416,10 @@ class Nessus(object):
     def load_mail(self):
         self._mail = self.Mail()
         return self._mail.load()
+
+    def load_proxy(self):
+        self._proxy = self.Proxy()
+        return self._proxy.load()
 
     def load_templates(self):
         """
@@ -777,6 +788,10 @@ class Nessus(object):
     def mail(self):
         return self._mail
 
+    @property
+    def proxy(self):
+        return self._proxy
+
     @policies.setter
     def policies(self, value):
         self._policies = value
@@ -823,4 +838,11 @@ class Nessus(object):
         if isinstance(value, Mail):
             self._mail = value
         else:
-            raise Exception("Not a Mail object")
+            raise Exception("Not a Mail instance")
+
+    @proxy.setter
+    def proxy(self, value):
+        if isinstance(value, Proxy):
+            self._proxy = value
+        else:
+            raise Exception("Not a Proxy instance")
