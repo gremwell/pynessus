@@ -33,7 +33,7 @@ class Group(NessusObject):
         self._name = None
         self._users = []
 
-    def create(self, name):
+    def create(self):
         """
         Create a group.
         Params:
@@ -43,7 +43,7 @@ class Group(NessusObject):
             response = self._server._api_request(
                 "POST",
                 "/groups",
-                {"name": name}
+                {"name": self.name}
             )
             if response is not None:
                 self.id = response["id"]
@@ -55,7 +55,7 @@ class Group(NessusObject):
         else:
             raise Exception("Not supported.")
 
-    def edit(self, name):
+    def edit(self):
         """
         Edit a group
         Params:
@@ -65,7 +65,7 @@ class Group(NessusObject):
             response = self._server._api_request(
                 "POST",
                 "/groups/%d" % self.id,
-                {"name": name}
+                {"name": self.name}
             )
             if response is not None:
                 self.id = response["id"]
@@ -96,7 +96,7 @@ class Group(NessusObject):
         else:
             raise Exception("Not supported.")
 
-    def list_user(self):
+    def list_users(self):
 
         if self._server.server_version[0] == "6":
             response = self._server._api_request(
@@ -174,3 +174,36 @@ class Group(NessusObject):
             self._users = value
         else:
             raise Exception("Invalid format.")
+
+    @property
+    def id(self):
+        return self._id
+
+    @id.setter
+    def id(self, value):
+        self._id = int(value)
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = str(value)
+
+    @property
+    def permissions(self):
+        return self._permissions
+
+    @permissions.setter
+    def permissions(self, value):
+        self._permissions = int(value)
+
+    @property
+    def user_count(self):
+        return self._user_count
+
+    @user_count.setter
+    def user_count(self, value):
+        self._user_count = int(value)
+
