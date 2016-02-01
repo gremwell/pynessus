@@ -16,6 +16,8 @@ limitations under the License.
 from httplib import HTTPSConnection, CannotSendRequest, ImproperConnectionState
 import os
 import json
+import socket
+import errno
 from xml.dom.minidom import parseString
 from models.scan import Scan
 from models.schedule import Schedule
@@ -32,7 +34,7 @@ from models.agentgroup import AgentGroup
 from models.mail import Mail
 from models.permission import Permission
 from models.proxy import Proxy
-
+from models.group import Group
 
 class NessusAPIError(Exception):
     pass
@@ -98,6 +100,7 @@ class Nessus(object):
         self._reports = []
         self._scanners = []
         self._permissions = []
+        self._groups = []
 
         self._headers = {
             "Content-type": "application/json",
@@ -152,6 +155,9 @@ class Nessus(object):
     def Proxy(self):
         return Proxy(self)
 
+    def Group(self):
+        return Group(self)
+
     def _request(self, method, target, params, headers=None):
         """
         Send an HTTP request.
@@ -175,6 +181,13 @@ class Nessus(object):
             self._connection = HTTPSConnection(self._url, self._port)
             self.login(self._user)
             self._request(method, target, params, self._headers)
+        except socket.error as serr:
+            if serr.errno != errno.ECONNREFUSED:
+                # Not the error we are looking for, re-raise
+                raise serr
+            else:
+                raise Exception("Can't connect to Nessus at https://%s:%s" % (self._url, self._port))
+
         response = self._connection.getresponse()
         if response.status == 200:
             return response.read()
@@ -194,23 +207,22 @@ class Nessus(object):
         if not params:
             params = {}
         params['json'] = 1
-        for _ in range(3):
-            response = json.loads(self._request(method, target, json.dumps(params)))
-            if not "error" in response:
-                break
-        if self.server_version[0] == "5":
-            if "error" in response:
-                raise NessusAPIError(response["error"])
-            elif response['reply']['status'] == "OK":
-                return response["reply"]["contents"]
-            else:
-                return None
-        elif self.server_version[0] == "6":
-            if response is not None and "error" in response:
-                raise NessusAPIError(response["error"])
-            return response
-        else:
-            return None
+        raw_response = self._request(method, target, json.dumps(params))
+
+        if raw_response is not None and len(raw_response):
+            response = json.loads(raw_response)
+            if self.server_version[0] == "5":
+                if "error" in response:
+                    raise NessusAPIError(response["error"])
+                elif response['reply']['status'] == "OK":
+                    return response["reply"]["contents"]
+                else:
+                    return None
+            elif self.server_version[0] == "6":
+                if response is not None and "error" in response:
+                    raise NessusAPIError(response["error"])
+                return response
+        return None
 
     @staticmethod
     def _encode(filename):
@@ -269,7 +281,6 @@ class Nessus(object):
             #TODO: add session creation and management
             params = {'username': user.username, 'password': user.password}
             response = self._api_request("POST", "/session", params)
-
             if response is not None:
                 if "status" in response:
                     raise Exception(response["status"])
@@ -336,7 +347,27 @@ class Nessus(object):
         success &= self.load_tags()
         success &= self.load_templates()
         success &= self.load_users()
+        success &= self.load_groups()
         return success
+
+    def load_groups(self):
+        """
+
+        :return:
+        """
+        if self.server_version[0] == "6":
+            response = self._api_request("GET", "/groups")
+            if "groups" in response and response["groups"] is not None:
+                for g in response["groups"]:
+                    group = self.Group()
+                    group.id = g["id"]
+                    group.name = g["name"]
+                    group.user_count = g["user_count"]
+                    group.permissions = g["permissions"]
+                    self._groups.append(group)
+            return True
+        else:
+            raise Exception("Groups are not supported by Nessus version < 6.x .")
 
     def load_agents(self):
         """
@@ -386,7 +417,6 @@ class Nessus(object):
             return True
         else:
             raise Exception("Agents are not supported by Nessus version < 6.x .")
-
 
     def load_properties(self):
         """
@@ -682,7 +712,6 @@ class Nessus(object):
         else:
             return False
 
-
     def upload_file(self, filename):
         """
         Upload the file identified by filename to the server.
@@ -792,6 +821,18 @@ class Nessus(object):
     def proxy(self):
         return self._proxy
 
+    @property
+    def folders(self):
+        return self._folders
+
+    @property
+    def groups(self):
+        return self._groups
+
+    @property
+    def user(self):
+        return self._user
+
     @policies.setter
     def policies(self, value):
         self._policies = value
@@ -846,3 +887,18 @@ class Nessus(object):
             self._proxy = value
         else:
             raise Exception("Not a Proxy instance")
+
+    @folders.setter
+    def folders(self, value):
+        self._folders = value
+
+    @groups.setter
+    def groups(self, value):
+        self._groups = value
+
+    @user.setter
+    def user(self, value):
+        if isinstance(value, User):
+            self._user = value
+        else:
+            raise Exception("Not a User instance")
