@@ -52,11 +52,11 @@ class Proxy(NessusObject):
                 ""
             )
             if response is not None:
-                self._proxy = response["proxy"]
-                self._proxy_port = response["proxy_port"]
-                self._proxy_username = response["proxy_username"]
-                self._proxy_password = response["proxy_password"]
-                self._user_agent = response["user_agent"]
+                self.proxy = response["proxy"]
+                self.proxy_port = response["proxy_port"]
+                self.proxy_username = response["proxy_username"]
+                self.proxy_password = response["proxy_password"]
+                self.user_agent = response["user_agent"]
                 return True
             else:
                 return False
@@ -102,7 +102,7 @@ class Proxy(NessusObject):
 
     @proxy_port.setter
     def proxy_port(self, value):
-        self._proxy_port = str(value)
+        self._proxy_port = int(value)
 
     @property
     def proxy_username(self):
