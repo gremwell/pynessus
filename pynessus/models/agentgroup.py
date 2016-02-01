@@ -60,37 +60,29 @@ class AgentGroup(NessusObject):
         else:
             raise Exception("Not supported.")
 
-    def configure(self, name):
+    def create(self):
         if self._server.server_version[0] == "6":
             response = self._server._api_request(
-                "PUT",
-                "/scanners/%d/agent-groups/%d" % (self._scanner_id, self.id),
-                {"name": name}
+                "POST",
+                "/scanners/%d/agent-groups" % self.scanner_id,
+                {"name": self.name}
             )
             if response is not None:
+                self._id = response["id"]
                 return True
             else:
                 return False
         else:
             raise Exception("Not supported.")
 
-    def create(self, scanner_id, name):
+    def update(self):
         if self._server.server_version[0] == "6":
             response = self._server._api_request(
-                "POST",
-                "/scanners/%d/agent-groups" % scanner_id,
-                {"name": name}
+                "PUT",
+                "/scanners/%d/agent-groups/%d" % (self._scanner_id, self.id),
+                {"name": self.name}
             )
-            if response is not None:
-                self._id = response["id"]
-                self._name = response["name"]
-                self._owner_id = response["owner_id"]
-                self._owner = response["owner"]
-                self._shared = response["shared"]
-                self._user_permissions = response["user_permissions"]
-                self._creation_date = response["creation_date"]
-                self._creation_date = response["last_modification_date"]
-                self._scanner_id = scanner_id
+            if response is None:
                 return True
             else:
                 return False
