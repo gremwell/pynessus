@@ -53,14 +53,14 @@ class Mail(NessusObject):
                 ""
             )
             if response is not None:
-                self._smtp_host = response["smtp_host"]
-                self._smtp_port = response["smtp_port"]
-                self._smtp_from = response["smtp_from"]
-                self._smtp_www_host = response["smtp_www_host"]
-                self._smtp_auth = response["smtp_auth"]
-                self._smtp_user = response["smtp_user"]
-                self._smtp_pass = response["smtp_pass"]
-                self._smtp_enc = response["smtp_enc"]
+                self.smtp_host = response["smtp_host"]
+                self.smtp_port = response["smtp_port"]
+                self.smtp_from = response["smtp_from"]
+                self.smtp_www_host = response["smtp_www_host"]
+                self.smtp_auth = response["smtp_auth"]
+                self.smtp_user = response["smtp_user"]
+                self.smtp_pass = response["smtp_pass"]
+                self.smtp_enc = response["smtp_enc"]
                 return True
             else:
                 return False
@@ -109,7 +109,7 @@ class Mail(NessusObject):
 
     @smtp_port.setter
     def smtp_port(self, value):
-        self._smtp_port = str(value)
+        self._smtp_port = int(value)
 
     @property
     def smtp_from(self):
