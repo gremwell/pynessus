@@ -32,13 +32,22 @@ class Plugin(NessusObject):
         self._family_name = None
         self._attributes = []
 
-    def details(self):
+    def load_details(self):
         """
         Returns the details for a given plugin.
         Params:
         Returns:
         """
-        return
+        if self._server.server_version[0] == "6":
+            response = self._server._api_request("GET", "/plugins/plugin/%d" % self.id, "")
+            if response is not None:
+                self.id = response["id"]
+                self.name = response["name"]
+                self.family_name = response["family_name"]
+                self.attributes = response["attributes"]
+            return True
+        else:
+            raise Exception("Plugin families are not supported by Nessus version < 6.x .")
 
     @property
     def name(self):
@@ -62,7 +71,7 @@ class Plugin(NessusObject):
 
     @attributes.setter
     def attributes(self, value):
-        if type(value) == list:
+        if type(value) == list or value is None:
             self._attributes = value
         else:
             raise Exception("Invalid format.")
@@ -87,22 +96,23 @@ class PluginFamily(NessusObject):
         self._status = "enabled"
         self._plugins = []
 
-    @staticmethod
-    def list():
+    def load_plugins(self):
         """
-        Return plugin family list.
-        Params:
-        Returns:
-        """
-        return
 
-    def details(self):
+        :return:
         """
-        Returns the list of plugins in a family.
-        Params:
-        Returns:
-        """
-        return
+        if self._server.server_version[0] == "6":
+            response = self._server._api_request("GET", "/plugins/families/%d" % self.id, "")
+            if "plugins" in response and response["plugins"] is not None:
+                for plugin in response["plugins"]:
+                    p = self._server.Plugin()
+                    p.id = plugin["id"]
+                    p.name = plugin["name"]
+                    p.load_details()
+                    self._plugins.append(p)
+            return True
+        else:
+            raise Exception("Plugin families are not supported by Nessus version < 6.x .")
 
     @property
     def id(self):
@@ -142,7 +152,194 @@ class PluginFamily(NessusObject):
 
     @plugins.setter
     def plugins(self, value):
-        if type(value) == list:
+        if type(value) == list or value is None:
             self._plugins = value
         else:
             raise Exception("Invalid format.")
+
+
+def enum(**enums):
+    return type('Enum', (), enums)
+
+
+class Severity:
+    """
+
+    """
+    RECAST_CRITICAL = "recast_critical"
+    RECAST_HIGH = "recast_high"
+    RECAST_MEDIUM = "recast_medium"
+    RECAST_LOW = "recast_low"
+    RECAST_INFO = "recast_info"
+    EXCLUDE = "exclude"
+
+
+class PluginRule(NessusObject):
+    """
+    A Nessus Plugin Rule.
+
+    Attributes:
+        id(int):
+        plugin_id(int):
+        date(str):
+        host(str):
+        type(str):
+        owner(str):
+        owner_id(int):
+    """
+
+    def __init__(self, server):
+        """Constructor"""
+        super(PluginRule, self).__init__(server)
+        self._id = -1
+        self._plugin_id = -1
+        self._date = None
+        self._host = None
+        self._type = None
+        self._owner = None
+        self._owner_id = -1
+
+    def create(self):
+        """
+
+        :return:
+        """
+        response = self._server._api_request(
+            "POST",
+            "/plugin-rules",
+            {
+                "plugin_id": self.plugin_id,
+                "type": self.type,
+                "host": self.host,
+                "date": self.date
+            }
+        )
+        return True if response is None else False
+
+    def edit(self):
+        """
+
+        :return:
+        """
+        response = self._server._api_request(
+            "PUT",
+            "/plugin-rules/%d" % self.id,
+            {
+                "plugin_id": self.plugin_id,
+                "type": self.type,
+                "host": self.host,
+                "date": self.date
+            }
+        )
+        return True if response is None else False
+
+    def delete(self):
+        """
+
+        :return:
+        """
+        response = self._server._api_request(
+            "DELETE",
+            "/plugin-rules/%d" % self.id,
+            ""
+        )
+        return True if response is None else False
+
+    def details(self):
+        """
+
+        :return:
+        """
+        response = self._server._api_request(
+            "GET",
+            "/plugin-rules/%d" % self.id,
+            ""
+        )
+        if response is not None:
+            self.id = response["id"]
+            self.plugin_id = response["plugin_id"]
+            self.date = response["date"]
+            self.host = response["host"]
+            self.type = response["type"]
+            self.owner = response["owner"]
+            self.owner_id = response["owner_id"]
+            return True
+        else:
+            return False
+
+    @property
+    def id(self):
+        return self._id
+
+    @id.setter
+    def id(self, value):
+        if type(value) in [int] or value is None:
+            self._id = value
+        else:
+            raise Exception("")
+
+    @property
+    def plugin_id(self):
+        return self._plugin_id
+
+    @plugin_id.setter
+    def plugin_id(self, value):
+        if type(value) in [int] or value is None:
+            self._plugin_id = value
+        else:
+            raise Exception("")
+
+    @property
+    def date(self):
+        return self._date
+
+    @date.setter
+    def date(self, value):
+        if type(value) in [str, unicode] or value is None:
+            self._date = value
+        else:
+            raise Exception("")
+
+    @property
+    def host(self):
+        return self._host
+
+    @host.setter
+    def host(self, value):
+        if type(value) in [str, unicode] or value is None:
+            self._host = value
+        else:
+            raise Exception("")
+
+    @property
+    def type(self):
+        return self._type
+
+    @type.setter
+    def type(self, value):
+        if type(value) in [str, unicode] or value is None:
+            self._type = value
+        else:
+            raise Exception("")
+
+    @property
+    def owner(self):
+        return self._owner
+
+    @owner.setter
+    def owner(self, value):
+        if type(value) in [str, unicode] or value is None:
+            self._owner = value
+        else:
+            raise Exception("")
+
+    @property
+    def owner_id(self):
+        return self._owner_id
+
+    @owner_id.setter
+    def owner_id(self, value):
+        if type(value) in [int] or value is None:
+            self._owner_id = value
+        else:
+            raise Exception("")
