@@ -440,14 +440,6 @@ class Policy(NessusObject):
         else:
             raise Exception("Policy details not available in Nessus version < 6.x")
 
-    def _import(self):
-        """
-        Import an existing policy uploaded using Nessus.file (.nessus format only).
-        Params:
-        Returns:
-        """
-        raise Exception("Not yet implemented.")
-
     def export(self, filename=None):
         """
         Export the given policy.
