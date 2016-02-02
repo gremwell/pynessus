@@ -23,7 +23,7 @@ from models.scan import Scan
 from models.schedule import Schedule
 from models.tag import Tag
 from models.policy import Policy
-from models.plugin import Plugin, PluginFamily
+from models.plugin import Plugin, PluginFamily, PluginRule
 from models.user import User
 from models.folder import Folder
 from models.template import Template
@@ -101,6 +101,9 @@ class Nessus(object):
         self._scanners = []
         self._permissions = []
         self._groups = []
+        self._plugin_families =[]
+        self._plugin_rules = []
+        self._plugins = []
 
         self._headers = {
             "Content-type": "application/json",
@@ -127,6 +130,9 @@ class Nessus(object):
 
     def PluginFamily(self):
         return PluginFamily(self)
+
+    def PluginRule(self):
+        return PluginRule(self)
 
     def Schedule(self):
         return Schedule(self)
@@ -347,8 +353,51 @@ class Nessus(object):
         success &= self.load_tags()
         success &= self.load_templates()
         success &= self.load_users()
-        success &= self.load_groups()
+        #success &= self.load_groups()
+        success &= self.load_plugin_families()
+        success &= self.load_plugin_rules()
         return success
+
+    def load_plugin_families(self):
+        """
+
+        :return:
+        """
+        if self.server_version[0] == "6":
+            response = self._api_request("GET", "/plugins/families", "")
+            if response is not None and "families" in response:
+                for family in response["families"]:
+                    p = self.PluginFamily()
+                    p.id = family["id"]
+                    p.name = family["name"]
+                    p.plugin_count = family["count"]
+                    p.load_plugins()
+                    self._plugin_families.append(p)
+            return True
+        else:
+            raise Exception("Plugin families are not supported by Nessus version < 6.x .")
+
+    def load_plugin_rules(self):
+        """
+
+        :return:
+        """
+        if self.server_version[0] == "6":
+            response = self._api_request("GET", "/plugin-rules", "")
+            if "plugin_rules" in response and response["plugin_rules"] is not None:
+                for p in response["plugin_rules"]:
+                    plugin_rule = self.PluginRule()
+                    plugin_rule.id = p["id"]
+                    plugin_rule.plugin_id = p["plugin_id"]
+                    plugin_rule.date = p["date"]
+                    plugin_rule.host = p["host"]
+                    plugin_rule.type = p["type"]
+                    plugin_rule.owner = p["owner"]
+                    plugin_rule.owner_id = p["owner_id"]
+                    self._plugin_rules.append(plugin_rule)
+            return True
+        else:
+            raise Exception("Plugin rules are not supported by Nessus version < 6.x .")
 
     def load_groups(self):
         """
@@ -650,7 +699,6 @@ class Nessus(object):
             response = self._api_request("GET", "/policies")
             if "policies" in response and response["policies"] is not None:
                 self._policies = []
-                print response
                 for result in response['policies']:
                     policy = self.Policy()
                     policy.id = result["id"]
@@ -664,11 +712,7 @@ class Nessus(object):
                     policy.last_modification_date = result["last_modification_date"]
                     policy.creation_date = result["creation_date"]
                     self._policies.append(policy)
-                return True
-            else:
-                return False
-
-
+            return True
 
     def load_users(self):
         """
@@ -833,6 +877,14 @@ class Nessus(object):
     def user(self):
         return self._user
 
+    @property
+    def plugin_families(self):
+        return self._plugin_families
+
+    @property
+    def plugin_rules(self):
+        return self._plugin_rules
+
     @policies.setter
     def policies(self, value):
         self._policies = value
@@ -860,7 +912,6 @@ class Nessus(object):
     @templates.setter
     def templates(self, value):
         self._templates = value
-
 
     @scanners.setter
     def scanners(self, value):
