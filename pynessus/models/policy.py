@@ -32,6 +32,9 @@ class Policy(NessusObject):
         last_modification_date(int):
         visibility(bool):
         no_target(bool):
+        audits(dict):
+        credentials(dict):
+        scap(dict):
     """
 
     def __init__(self, server):
@@ -48,9 +51,12 @@ class Policy(NessusObject):
         self._last_modification_date = 0
         self._visibility = False
         self._no_target = False
-        self._settings = None
-        self._preferences = None
-        self._plugins = None
+        self._settings = dict()
+        self._preferences = dict()
+        self._plugins = dict()
+        self._audits = dict()
+        self._credentials = dict()
+        self._scap = dict()
 
     def configure(self):
         """
@@ -58,7 +64,7 @@ class Policy(NessusObject):
         Params:
         Returns:
         """
-        return
+        return self.edit()
 
     def copy(self):
         """
@@ -420,7 +426,19 @@ class Policy(NessusObject):
         Params:
         Returns:
         """
-        raise Exception("Not yet implemented.")
+        if self._server.server_version[0] == "6":
+            response = self._server._api_request("GET", "/policies/%d" % self.id)
+            if response is not None:
+                print response
+                self.template_uuid = response["uuid"]
+                self.settings = response["settings"] if "settins" in response else None
+                self.audits = response["audits"] if "audits" in response else None
+                self.credentials = response["credentials"] if "credentials" in response else None
+                self.plugins = response["plugins"] if "plugins" in response else None
+                self.scap = response["scap"] if "scap" in response else None
+                return True
+        else:
+            raise Exception("Policy details not available in Nessus version < 6.x")
 
     def _import(self):
         """
@@ -604,7 +622,7 @@ class Policy(NessusObject):
 
     @settings.setter
     def settings(self, value):
-        if type(value) is list:
+        if type(value) is dict or value is None:
             self._settings = value
         else:
             raise Exception("Invalid format.")
@@ -615,7 +633,7 @@ class Policy(NessusObject):
 
     @preferences.setter
     def preferences(self, value):
-        if type(value) is list:
+        if type(value) is dict or value is None:
             self._preferences = value
         else:
             raise Exception("Invalid format.")
@@ -626,7 +644,7 @@ class Policy(NessusObject):
 
     @plugins.setter
     def plugins(self, value):
-        if type(value) is list:
+        if type(value) is dict or value is None:
             self._plugins = value
         else:
             raise Exception("Invalid format.")
@@ -638,6 +656,39 @@ class Policy(NessusObject):
     @template_uuid.setter
     def template_uuid(self, value):
         self._template_uuid = str(value)
+
+    @property
+    def audits(self):
+        return self._audits
+
+    @audits.setter
+    def audits(self, value):
+        if type(value) is dict or value is None:
+            self._audits = value
+        else:
+            raise Exception("Invalid format.")
+
+    @property
+    def credentials(self):
+        return self._credentials
+
+    @credentials.setter
+    def credentials(self, value):
+        if type(value) is dict or value is None:
+            self._credentials = value
+        else:
+            raise Exception("Invalid format.")
+
+    @property
+    def scap(self):
+        return self._scap
+
+    @scap.setter
+    def scap(self, value):
+        if type(value) is dict or value is None:
+            self._scap = value
+        else:
+            raise Exception("Invalid format.")
 
 
 class PreferenceValue(object):
