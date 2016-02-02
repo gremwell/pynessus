@@ -444,7 +444,12 @@ class Policy(NessusObject):
                 f.write(response)
             return filename
         elif self._server.server_version[0] == "6":
-            raise Exception("Not yet implemented.")
+            if filename is None:
+                filename = "nessus_policy_%s.nessus" % self.name
+            response = self._server._request("GET", "/policies/%d/export" % self.id, "")
+            with open(filename, "wb") as f:
+                f.write(response)
+            return filename
         else:
             return False
 
