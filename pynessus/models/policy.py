@@ -121,9 +121,8 @@ class Policy(NessusObject):
                 return False
 
         elif self._server.server_version[0] == "6":
-            #TODO : get uuids from templates
             params = {
-                "uuid": "ad629e16-03b6-8c1d-cef6-ef8c9dd3c658d24bd260ef5f9e66",
+                "uuid": self.template_uuid,
                 "settings": {
                     "name": self.name,
                     "description": self.description,
@@ -231,8 +230,6 @@ class Policy(NessusObject):
                 "credentials": {},
                 "plugins": {}
             }
-            if self._server.settings is not None:
-                params = dict(params.items() + self.settings.items())
             response = self._server._api_request("POST", "/policies", params)
             if response is not None:
                 self.id = response["policy_id"]
@@ -628,6 +625,14 @@ class Policy(NessusObject):
             self._plugins = value
         else:
             raise Exception("Invalid format.")
+
+    @property
+    def template_uuid(self):
+        return self._template_uuid
+
+    @template_uuid.setter
+    def template_uuid(self, value):
+        self._template_uuid = str(value)
 
 
 class PreferenceValue(object):
