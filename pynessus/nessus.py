@@ -212,9 +212,9 @@ class Nessus(object):
         """
         if not params:
             params = {}
-        params['json'] = 1
+        if self.server_version == "5":
+            params['json'] = 1
         raw_response = self._request(method, target, json.dumps(params))
-
         if raw_response is not None and len(raw_response):
             response = json.loads(raw_response)
             if self.server_version[0] == "5":
@@ -783,12 +783,34 @@ class Nessus(object):
                 headers = self._headers
                 headers["Content-type"] = content_type
                 response = json.loads(self._request("POST", "/file/upload", body, self._headers))
-                if "fileuploaded" in response and response["fileuploaded"] == os.path.basename(filename):
-                    return True
+                if "fileuploaded" in response:
+                    return response["fileuploaded"]
                 else:
                     return False
             else:
                 return False
+
+    def import_policy(self, filename):
+        """
+        Import an existing policy uploaded using Nessus.file (.nessus format only).
+        Params:
+        Returns:
+        """
+        if self.server_version[0] == "5":
+            raise Exception("Not yet implemented.")
+        elif self.server_version[0] == "6":
+            uploaded_file = self.upload_file(filename)
+            if uploaded_file:
+                response = self._api_request(
+                    "POST",
+                    "/policies/import",
+                    {"file": uploaded_file}
+                )
+                return True if response is None else False
+            else:
+                raise Exception("An error occured while uploading %s." % filename)
+        else:
+            return False
 
     @property
     def server_version(self):
