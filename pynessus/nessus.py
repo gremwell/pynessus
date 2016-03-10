@@ -20,8 +20,6 @@ import socket
 import errno
 from xml.dom.minidom import parseString
 from models.scan import Scan
-from models.schedule import Schedule
-from models.tag import Tag
 from models.policy import Policy
 from models.plugin import Plugin, PluginFamily, PluginRule
 from models.user import User
@@ -141,9 +139,6 @@ class Nessus(object):
 
     def User(self, username=None, password=None):
         return User(self, username, password)
-
-    def Tag(self):
-        return Tag(self)
 
     def Folder(self):
         return Folder(self)
@@ -690,10 +685,6 @@ class Nessus(object):
         return self._scans
 
     @property
-    def schedules(self):
-        return self._schedules
-
-    @property
     def policies(self):
         if self._policies is None:
             self.load_policies()
@@ -754,10 +745,6 @@ class Nessus(object):
     @scans.setter
     def scans(self, value):
         self._scans = value
-
-    @schedules.setter
-    def schedules(self, value):
-        self._schedules = value
 
     @tags.setter
     def tags(self, value):
