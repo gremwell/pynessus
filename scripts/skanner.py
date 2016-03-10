@@ -52,7 +52,7 @@ class Skanner(object):
                     self.info("Successfully logged in.")
                     nessus.load_scans()
                     for scan in nessus.scans:
-                        if scan.uuid == options.scan_uuid:
+                        if scan.id == int(options.scan_uuid):
                             found = True
                             self.info("Found scan %s." % scan.uuid)
                             while scan.status != "completed" and scan.status != "canceled":
@@ -60,26 +60,13 @@ class Skanner(object):
                                 sys.stdout.flush()
                                 time.sleep(5)
                             if scan.status == "completed":
-                                r = nessus.Report()
-                                r.id = scan.uuid
-                                path = r.download()
+                                path = scan.download()
                                 if path is not None:
                                     self.info("Report downloaded to %s" % path)
                                 else:
                                     raise Exception("An error occured while downloading report %s." % r.id)
                             else:
                                 raise Exception("Scan has been canceled.")
-                    if not found:
-                        nessus.load_reports()
-                        for report in nessus.reports:
-                            if report.id == options.scan_uuid:
-                                found = True
-                                self.info("Found report for scan %s" % options.scan_uuid)
-                                path = report.download()
-                                if path is not None:
-                                    self.info("Report downloaded to %s" % path)
-                                else:
-                                    raise Exception("An error occured while downloading report %s." % report.id)
                     if not found:
                         raise Exception("Can't find scan identified by %s" % options.scan_uuid)
                 else:
@@ -101,10 +88,12 @@ class Skanner(object):
                 if nessus.login(user):
                     self.info("Successfully logged in.")
                     nessus.load_policies()
-                    nessus.load_tags()
+                    nessus.load_folders()
                     scan = nessus.Scan()
                     scan.name = options.scan_name
-                    scan.tag = nessus.tags[0]
+		    for folder in nessus.folders:
+			if folder.name == "My Scans":
+			    scan.tag = folder
                     # does the provided policy exists ?
                     for policy in nessus.policies:
                         if policy.name == options.policy_name:
@@ -119,9 +108,7 @@ class Skanner(object):
                                 sys.stdout.flush()
                                 time.sleep(5)
                             if scan.status == "completed":
-                                r = nessus.Report()
-                                r.id = scan.uuid
-                                path = r.download()
+                                path = scan.download()
                                 if path is not None:
                                     self.info("Report downloaded to %s" % path)
                                 else:
