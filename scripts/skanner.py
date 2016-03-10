@@ -23,7 +23,7 @@ class Skanner(Framework):
                     self.info("Successfully logged in.")
                     nessus.load_scans()
                     for scan in nessus.scans:
-                        if scan.uuid == options.scan_uuid:
+                        if scan.id == int(options.scan_uuid):
                             found = True
                             self.info("Found scan %s." % scan.uuid)
                             while scan.status != "completed" and scan.status != "canceled":
