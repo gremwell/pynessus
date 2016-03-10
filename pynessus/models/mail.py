@@ -109,7 +109,8 @@ class Mail(NessusObject):
 
     @smtp_port.setter
     def smtp_port(self, value):
-        self._smtp_port = int(value)
+        if value is not None:
+            self._smtp_port = int(value)
 
     @property
     def smtp_from(self):

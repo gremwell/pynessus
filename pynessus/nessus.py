@@ -97,7 +97,6 @@ class Nessus(object):
         self._folders = []
         self._users = []
         self._notifications = []
-        self._reports = []
         self._scanners = []
         self._permissions = []
         self._groups = []
@@ -215,7 +214,7 @@ class Nessus(object):
         if self.server_version == "5":
             params['json'] = 1
         raw_response = self._request(method, target, json.dumps(params))
-        if raw_response is not None and len(raw_response):
+	if raw_response is not None and len(raw_response):
             response = json.loads(raw_response)
             if self.server_version[0] == "5":
                 if "error" in response:
@@ -354,8 +353,8 @@ class Nessus(object):
         success &= self.load_templates()
         success &= self.load_users()
         #success &= self.load_groups()
-        success &= self.load_plugin_families()
-        success &= self.load_plugin_rules()
+        #success &= self.load_plugin_families()
+        #success &= self.load_plugin_rules()
         return success
 
     def load_plugin_families(self):
@@ -602,8 +601,11 @@ class Nessus(object):
                     scan.creation_date = s["creation_date"]
                     scan.user_permissions = s["user_permissions"]
                     scan.shared = s["shared"]
-                    scan.id = s["uuid"]
-                    scan.uuid = s["uuid"]
+                    scan.id = s["id"]
+                    scan.template = self.Template()
+                    scan.template.uuid = s["uuid"]
+                    scan.folder = self.Folder()
+                    scan.folder.id = s["folder_id"]
                     for user in self.users:
                         if user.id == s["owner_id"]:
                             scan.owner = user
@@ -678,7 +680,8 @@ class Nessus(object):
                     self._policies = []
                     for result in response['policies']["policy"]:
                         policy = self.Policy()
-                        policy.id = result["id"]
+        	        policy.template_uuid = result["template_uuid"]
+	                policy.id = result["id"]
                         policy.db_id = result["db_id"]
                         policy.name = result["name"]
                         policy.owner = result["owner"]
@@ -702,7 +705,8 @@ class Nessus(object):
                 for result in response['policies']:
                     policy = self.Policy()
                     policy.id = result["id"]
-                    policy.name = result["name"]
+        	    policy.template_uuid = result["template_uuid"]
+	            policy.name = result["name"]
                     policy.owner = result["owner"]
                     policy.creation_date = result["creation_date"]
                     policy.no_target = result["no_target"] if "no_target" in result else False
@@ -812,6 +816,36 @@ class Nessus(object):
         else:
             return False
 
+    def import_scan(self, filename, folder_id=None, password=None):
+        """
+        Import an existing policy uploaded using Nessus.file (.nessus format only).
+        Params:
+            filename(str):
+            folder_id(int):
+            password(str):
+        Returns:
+        """
+        if self.server_version[0] == "5":
+            raise Exception("Not yet implemented.")
+        elif self.server_version[0] == "6":
+            uploaded_file = self.upload_file(filename)
+            if uploaded_file:
+                params = {"file": uploaded_file}
+                if folder_id is not None:
+                    params["folder_id"] = folder_id
+                if password is not None:
+                    params["password"] = password
+                response = self._api_request(
+                    "POST",
+                    "/scans/import",
+                    params
+                )
+                return True if response is None else False
+            else:
+                raise Exception("An error occured while uploading %s." % filename)
+        else:
+            return False
+
     @property
     def server_version(self):
         if self._server_version is None:
@@ -837,7 +871,7 @@ class Nessus(object):
 
     @property
     def scanners(self):
-        if self._scanners is None:
+        if not len(self._scanners):
             self.load_scanners()
         return self._scanners
 
@@ -870,13 +904,9 @@ class Nessus(object):
         return self._tags
 
     @property
-    def reports(self):
-        if self._reports is None:
-            self.load_reports()
-        return self._reports
-
-    @property
     def templates(self):
+        if not len(self._templates):
+            self.load_templates()
         return self._templates
 
     @property
@@ -889,6 +919,8 @@ class Nessus(object):
 
     @property
     def folders(self):
+        if not len(self._folders):
+            self.load_folders()
         return self._folders
 
     @property
@@ -926,10 +958,6 @@ class Nessus(object):
     @users.setter
     def users(self, value):
         self._users = value
-
-    @reports.setter
-    def reports(self, value):
-        self._reports = value
 
     @templates.setter
     def templates(self, value):

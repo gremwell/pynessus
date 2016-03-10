@@ -1,6 +1,7 @@
 import time
 import sys
 from optparse import OptionParser
+import os
 
 from framework import Framework, Colors
 from pynessus import Nessus
@@ -30,9 +31,7 @@ class Skanner(Framework):
                                 sys.stdout.flush()
                                 time.sleep(5)
                             if scan.status == "completed":
-                                r = nessus.Report()
-                                r.id = scan.uuid
-                                path = r.download()
+                                path = scan.download()
                                 if path is not None:
                                     self.info("Report downloaded to %s" % path)
                                 else:
@@ -40,12 +39,11 @@ class Skanner(Framework):
                             else:
                                 raise Exception("Scan has been canceled.")
                     if not found:
-                        nessus.load_reports()
-                        for report in nessus.reports:
-                            if report.id == options.scan_uuid:
+                        for scan in nessus.scans:
+                            if scan.id == int(options.scan_uuid):
                                 found = True
                                 self.info("Found report for scan %s" % options.scan_uuid)
-                                path = report.download()
+                                path = scan.download()
                                 if path is not None:
                                     self.info("Report downloaded to %s" % path)
                                 else:
@@ -71,35 +69,41 @@ class Skanner(Framework):
                 if nessus.login(user):
                     self.info("Successfully logged in.")
                     nessus.load_policies()
-                    nessus.load_tags()
+		    nessus.load_templates()
+		    nessus.load_folders()
                     scan = nessus.Scan()
                     scan.name = options.scan_name
-                    scan.tag = nessus.tags[0]
+                    #scan.tag = nessus.folders[0]
                     # does the provided policy exists ?
                     for policy in nessus.policies:
                         if policy.name == options.policy_name:
                             scan.policy = policy
                     if scan.policy:
                         scan.custom_targets = targets
-                        if scan.launch():
-                            # scan launched, monitoring progress ...
-                            self.info("Scan %s has been launched, waiting for completion..." % scan.uuid)
-                            while scan.status != "completed" and scan.status != "canceled":
-                                sys.stdout.write("%s[Status: %s]%s %0.2f%%\r" % (Colors.O, scan.status, Colors.N, scan.progress))
-                                sys.stdout.flush()
-                                time.sleep(5)
-                            if scan.status == "completed":
-                                r = nessus.Report()
-                                r.id = scan.uuid
-                                path = r.download()
-                                if path is not None:
-                                    self.info("Report downloaded to %s" % path)
-                                else:
-                                    raise Exception("An error occured while downloading report %s." % r.id)
-                            else:
-                                raise Exception("Scan has been canceled.")
-                        else:
-                            raise Exception("An error occured when launching the scan.")
+                        
+			for folder in nessus.folders:
+				if folder.name == "My Scans":
+					scan.tag = folder
+		        try:
+				if scan.launch():
+        	                    # scan launched, monitoring progress ...
+                	            self.info("Scan %s has been launched, waiting for completion..." % scan.uuid)
+                        	    while scan.status != "completed" and scan.status != "canceled":
+	                                sys.stdout.write("%s[Status: %s]%s %0.2f%%\r" % (Colors.O, scan.status, Colors.N, scan.progress))
+	                                sys.stdout.flush()
+	                                time.sleep(5)
+	                            if scan.status == "completed":
+	                                path = scan.download()
+	                                if path is not None:
+	                                    self.info("Report downloaded to %s" % path)
+	                                else:
+        	                            raise Exception("An error occured while downloading report %s." % r.id)
+	                            else:
+        	                        raise Exception("Scan has been canceled.")
+                	        else:
+                        	    raise Exception("An error occured when launching the scan.")
+			except Exception as e:
+				print e.message
                     else:
                         raise Exception("Can't find the policy named %s. Aborting." % options.policy_name)
                     nessus.logout()

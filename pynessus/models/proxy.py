@@ -102,7 +102,8 @@ class Proxy(NessusObject):
 
     @proxy_port.setter
     def proxy_port(self, value):
-        self._proxy_port = int(value)
+        if value is not None:
+            self._proxy_port = int(value)
 
     @property
     def proxy_username(self):

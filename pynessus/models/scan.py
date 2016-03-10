@@ -14,6 +14,7 @@ limitations under the License.
 """
 from time import sleep
 from nessusobject import NessusObject
+from pynessus.models.host import Host
 
 REPORT_CHAPTERS = [
     "vuln_hosts_summary",
@@ -23,6 +24,15 @@ REPORT_CHAPTERS = [
     "vuln_by_plugin",
     "compliance"
 ]
+
+FORMATS = [
+    "nessus",
+    "csv",
+    "pdf",
+    "html",
+    "db"
+]
+
 
 class Scan(NessusObject):
     """
@@ -63,6 +73,11 @@ class Scan(NessusObject):
         self._notes = None
         self._remediations = None
         self._hosts = None
+        self._folder = None
+        self._comphosts = None
+        self._compliance = None
+        self._history = None
+        self._filters = None
 
     @property
     def status(self):
@@ -73,10 +88,18 @@ class Scan(NessusObject):
         Returns:
             string: current scan status
         """
-        params = {"id": self.uuid}
-        response = self._server._api_request("POST", "/result/details", params)
-        self.status = response["info"]["status"]
-        return response["info"]["status"]
+        if self._server.server_version[0] == "5":
+		params = {"id": self.id}
+	        
+		response = self._server._api_request("POST", "/result/details", params)
+	        self._status = response["info"]["status"]
+	        return self._status
+	elif self._server.server_version[0] == "6":
+		response = self._server._api_request("GET", "/scans/%d" % self.id)
+		self._status = response["info"]["status"]
+		return self._status
+	else:
+		raise Exception("Not supported")
 
     @status.setter
     def status(self, status):
@@ -90,8 +113,13 @@ class Scan(NessusObject):
             scan(Scan):
         Returns:
         """
-        params = {"id" : self.uuid}
-        response = self._server._api_request("POST", "/result/details", params)
+        if self._server.server_version[0] == "5":
+		params = {"id" : self.uuid}
+	        response = self._server._api_request("POST", "/result/details", params)
+	elif self._server.server_version[0] == "6":
+		response = self._server._api_request("GET", "/scans/%d" % self.id)
+	else:
+		return None
         current = 0.0
         total = 0.0
         for host in response["hosts"]:
@@ -99,6 +127,14 @@ class Scan(NessusObject):
             total += host["scanprogresstotal"]
         return current/(total if total else 1.0)*100.0
 
+
+    @property
+    def id(self):
+        return self._id
+
+    @id.setter
+    def id(self, value):
+        self._id = int(value)
 
     @property
     def name(self):
@@ -292,13 +328,96 @@ class Scan(NessusObject):
     def remediations(self, value):
         self._remediations = value
 
+    @property
+    def folder(self):
+        return self._folder
+
+    @folder.setter
+    def folder(self, value):
+        self._folder = value
+
+    @property
+    def comphosts(self):
+        return self._comphosts
+
+    @comphosts.setter
+    def comphosts(self, value):
+        self._comphosts = value
+
+    @property
+    def compliance(self):
+        return self._compliance
+
+    @compliance.setter
+    def compliance(self, value):
+        self._compliance = value
+
+    @property
+    def history(self):
+        return self._history
+
+    @history.setter
+    def history(self, value):
+        self._history = value
+
+    @property
+    def filters(self):
+        return self._filters
+
+    @filters.setter
+    def filters(self, value):
+        self._filters = value
+
     def configure(self):
         """
         Changes the schedule or policy parameters of a scan.
         Params:
         Returns:
         """
-        return
+        if self._server.server_version[0] == "5":
+            raise Exception("Not implemented")
+        elif self._server.server_version[0] == "6":
+            response = self._server._api_request("POST", "/scans/%d/copy" % self.id)
+            if response is not None:
+                scan = self._server.Scan()
+                scan.creation_date = response["creation_date"]
+                scan.custom_targets = response["custom_targets"] if "custom_targets" in response else None
+                scan.default_permissions = response["default_permisssions"] if "default_permisssions" in response else None
+                scan.description = response["description"] if "description" in response else None
+                scan.emails = response["emails"] if "emails" in response else None
+                scan.id = response["id"]
+                scan.last_modification_date = response["last_modification_date"]
+                scan.name = response["name"]
+                scan.notification_filter_type = response["notification_filter_type"] if "notification_filter_type" in response else None
+                scan.notififcation_filters = response["notification_filters"] if "notification_filters" in response else None
+                if "owner_id" in response:
+                    for user in self.server.users:
+                        if user.id == response["owner_id"]:
+                            scan.owner = user
+                if "policy_id" in response:
+                    for policy in self.server.policies:
+                        if policy.id == response["policy_id"]:
+                            scan.policy = policy
+
+                scan.rrules = response["rrules"] if "rrules" in response else None
+                if "scanner_id" in response:
+                    for scanner in self.server.scanners:
+                        if scanner.id == response["scanner_id"]:
+                            scan.scanner = scanner
+                scan.shared = response["shared"] if "shared" in response else None
+                scan.starttime = response["starttime"] if "starttime" in response else None
+                scan.tag_id = response["tag_id"] if "tag_id" in response else None
+                scan.timezone = response["timezone"] if "timezone" in response else None
+                scan.type = response["type"] if "type" in response else None
+                scan.user_permissions = response["user_permissions"] if "user_permissions" in response else None
+                scan.template = self._server.Template()
+                scan.template.uuid = response["uuid"]
+                scan.use_dashboard = response["use_dashboard"] if "use_dashboard" in response else None
+                return scan
+            else:
+                return False
+        else:
+            return False
 
     def create(self):
         """
@@ -329,7 +448,7 @@ class Scan(NessusObject):
                 return False
         elif self._server.server_version[0] == "6":
             params = {
-                "uuid": self.template.uuid,
+                "uuid": self.policy.template_uuid,
                 "settings": {
                         "name": self.name,
                         "description": self.description,
@@ -348,11 +467,10 @@ class Scan(NessusObject):
             }
 
             response = self._server._api_request("POST", "/scans", params)
-            if response is not None:
-                self.id = response["scan"]["id"]
+	    if "scan" in response and response["scan"] is not None:
+	        self.id = response["scan"]["id"]
                 self.uuid = response["scan"]["uuid"]
-                self.status = response["scan"]["status"]
-                for user in self.users:
+                for user in self._server.users:
                     if user.name == response["scan"]["owner"]:
                         self.owner = user
                 return True
@@ -360,7 +478,6 @@ class Scan(NessusObject):
                 return False
         else:
             return False
-
 
     def delete(self):
         """
@@ -386,13 +503,20 @@ class Scan(NessusObject):
         else:
             return False
 
-    def delete_history(self):
+    def delete_history(self, history_id):
         """
-         Deletes historical results from a scan.
+        Deletes historical results from a scan.
         Params:
         Returns:
         """
-        return
+        if self._server.server_version[0] == "6":
+            response = self._server._api_request("DELETE", "/scans/%d/history/%d" % (self.id, history_id))
+            if response is None:
+                return True
+            else:
+                return False
+        else:
+            return False
 
     def details(self):
         """
@@ -400,7 +524,123 @@ class Scan(NessusObject):
         Params:
         Returns:
         """
-        return
+        if self._server.server_version[0] == "5":
+            raise Exception("Not supported.")
+        elif self._server.server_version[0] == "6":
+            response = self._server._api_request("GET", "/scans/%d" % self.id, "")
+
+            #self.info = response["info"]
+            self.hosts = []
+            if "comphosts" in response and response["comphosts"] is not None:
+                for host in response["hosts"]:
+                    h = Host(self._server)
+                    h.host_id = host["host_id"]
+                    h.host_index = host["host_index"]
+                    h.hostname = host["hostname"]
+                    h.progress = host["progress"]
+                    h.critical = host["critical"]
+                    h.high = host["high"]
+                    h.medium = host["medium"]
+                    h.low = host["low"]
+                    h.info = host["info"]
+                    h.totalchecksconsidered = host["totalchecksconsidered"]
+                    h.numchecksconsidered = host["numchecksconsidered"]
+                    h.scanprogresstotal = host["scanprogresstotal"]
+                    h.scanprogresscurrent = host["scanprogresscurrent"]
+                    h.score = host["score"]
+                    self.hosts.append(h)
+
+            self.comphosts = []
+            if "comphosts" in response and response["comphosts"] is not None:
+                for host in response["comphosts"]:
+                    h = Host(self._server)
+                    h.host_id = host["host_id"]
+                    h.host_index = host["host_index"]
+                    h.hostname = host["hostname"]
+                    h.progress = host["progress"]
+                    h.critical = host["critical"]
+                    h.high = host["high"]
+                    h.medium = host["medium"]
+                    h.low = host["low"]
+                    h.info = host["info"]
+                    h.totalchecksconsidered = host["totalchecksconsidered"]
+                    h.numchecksconsidered = host["numchecksconsidered"]
+                    h.scanprogresstotal = host["scanprogresstotal"]
+                    h.scanprogresscurrent = host["scanprogresscurrent"]
+                    h.score = host["schore"]
+                    self.comphosts.append(h)
+            self.notes = []
+            if "notes" in response and response["notes"] is not None:
+                for note in response["notes"]["note"]:
+                    n = Note()
+                    n.title = note["title"]
+                    n.message = note["message"]
+                    n.severity = note["severity"]
+                    self.notes.append(n)
+
+            self.remediations = []
+            if ("remediations" in response and response["remediations"] is not None) and \
+                    ("remediations" in response["remediations"] and
+                             response["remediations"]["remediations"] is not None):
+                for remediation in response["remediations"]["remediations"]:
+                    r = Remediation()
+                    r.value = remediation["value"]
+                    r.hosts = remediation["hosts"]
+                    r.vulns = remediation["vulns"]
+                    r.text = remediation["remediation"]
+                    self.remediations.append(r)
+
+            self.vulnerabilities = []
+            if "vulnerabilities" in response and response["vulnerabilities"] is not None:
+                for vulnerability in response["vulnerabilities"]:
+                    v = Vulnerability()
+                    v.plugin_id = vulnerability["plugin_id"]
+                    v.plugin_name = vulnerability["plugin_name"]
+                    v.plugin_family = vulnerability["plugin_family"]
+                    v.count = vulnerability["count"]
+                    v.vuln_index = vulnerability["vuln_index"]
+                    v.severity_index = vulnerability["severity_index"]
+                    self.vulnerabilities.append(v)
+
+            self.compliance = []
+            if "compliance" in response and response["compliance"] is not None:
+                for vulnerability in response["compliance"]:
+                    v = Vulnerability()
+                    v.plugin_id = vulnerability["plugin_id"]
+                    v.plugin_name = vulnerability["plugin_name"]
+                    v.plugin_family = vulnerability["plugin_family"]
+                    v.count = vulnerability["count"]
+                    v.vuln_index = vulnerability["vuln_index"]
+                    v.severity_index = vulnerability["severity_index"]
+                    self.compliance.append(v)
+
+            self.history = []
+            if "history" in response and response["history"] is not None:
+                for history in response["history"]:
+                    h = History()
+                    h.history_id = history["history_id"]
+                    h.uuid = history["uuid"]
+                    h.status = history["status"]
+                    h.owner_id = history["owner_id"]
+                    h.creation_date = history["creation_date"]
+                    h.last_modification_date = history["last_modification_date"]
+                    self.history.append(h)
+
+            self.filters = []
+            if "filters" in response and response["filters"] is not None:
+                for filt in response["filters"]:
+                    f = Filter()
+                    f.name = filt["name"]
+                    f.readable_name = filt["readable_name"]
+                    f.operators = filt["operators"]
+                    f.control = filt["control"]
+
+            for user in self._server.users:
+                if user.id == response["owner_id"]:
+                    self.owner = user
+            return True
+        else:
+            return False
 
     def download(self, filename=None, fmt="nessus", password=None, chapters=";".join(REPORT_CHAPTERS)):
         """
@@ -436,7 +676,6 @@ class Scan(NessusObject):
                             content = self._server._api_request(
                                 "GET", "/scans/%d/export/%d/status" % (s["id"], r_response["file"]))
                             if content is not None:
-                                print content["status"]
                                 status = content["status"]
                             sleep(1)
                         content = self._server._request("GET", "/scans/%d/export/%d/download" % (s["id"], r_response["file"]), "")
@@ -520,6 +759,39 @@ class Scan(NessusObject):
         else:
             return False
 
+    def copy(self):
+        """
+        Copy a scan .
+        Params:
+        Returns:
+            scan: Copied scan if successful, False otherwise.
+        """
+        if self._server.server_version[0] == "5":
+            raise Exception("Not supported.")
+        elif self._server.server_version[0] == "6":
+            response = self._server._api_request("POST", "/scans/%d/copy" % self.id)
+            scan = self._server.Scan()
+            scan.status = response["status"]
+            scan.enabled = response["enabled"]
+            scan.name = response["name"]
+            scan.read = response["read"]
+            scan.last_modification_date = response["last_modification_date"]
+            scan.creation_date = response["creation_date"]
+            scan.user_permissions = response["user_permissions"]
+            scan.shared = response["shared"]
+            scan.id = response["id"]
+            scan.template = self._server.Template()
+            scan.template.uuid = response["uuid"]
+            if "folder_id" in response:
+                scan.folder = self._server.Folder()
+                scan.folder.id = response["folder_id"]
+            for user in self._server.users:
+                if user.id == response["owner_id"]:
+                    scan.owner = user
+            return scan
+        else:
+            return None
+
     def launch(self):
         """
         Launches a scan.
@@ -544,8 +816,8 @@ class Scan(NessusObject):
             else:
                 return False
         elif self._server.server_version[0] == "6":
-            response = self._server._api_request("POST", "/scans/%d/pause" % self.id, "")
-            if response is not None:
+            response = self._server._api_request("POST", "/scans/%d/pause" % self.id)
+            if response is None:
                 return True
             else:
                 return False
@@ -569,13 +841,12 @@ class Scan(NessusObject):
                 return False
         elif self._server.server_version[0] == "6":
             response = self._server._api_request("POST", "/scans/%d/stop" % self.id, "")
-            if response is not None:
+            if response is None:
                 return True
             else:
                 return False
         else:
             return False
-
 
     def resume(self):
         """
@@ -594,7 +865,7 @@ class Scan(NessusObject):
                 return False
         elif self._server.server_version[0] == "6":
             response = self._server._api_request("POST", "/scans/%d/resume" % self.id, "")
-            if response is not None:
+            if response is None:
                 return True
             else:
                 return False
@@ -660,7 +931,7 @@ class Scan(NessusObject):
             else:
                 return False
         elif self._server.server_version[0] == "6":
-            raise Exception("Not yet implemented.")
+            return self._vulnerabilities
         else:
             return False
 
@@ -734,7 +1005,7 @@ class Scan(NessusObject):
             else:
                 return False
         elif self._server.server_version[0] == "6":
-            raise Exception("Not yet implemented.")
+            return self._notes
         else:
             return False
 
@@ -783,7 +1054,7 @@ class Scan(NessusObject):
             else:
                 return False
         elif self._server.server_version[0] == "6":
-            raise Exception("Not yet implemented.")
+            return self._hosts
         else:
             return False
 
@@ -820,7 +1091,7 @@ class Vulnerability(object):
 
     @id.setter
     def id(self, value):
-        self._id = value
+        self._id = int(value)
 
     @property
     def count(self):
@@ -959,3 +1230,123 @@ class Remediation(object):
     @text.setter
     def text(self, value):
         self._text = str(value)
+
+
+class History(object):
+    """
+    Scan history.
+
+    Attributes:
+        history_id(int):
+        uuid(string):
+        owner_id(int):
+        status(string):
+        creation_date(int):
+        last_modification_date(int):
+    """
+
+    def __init__(self):
+        self._history_id = 0
+        self._uuid = None
+        self._owner_id = 0
+        self._status = None
+        self._creation_date = 0
+        self._last_modification_date = 0
+
+    @property
+    def history_id(self):
+        return self._history_id
+
+    @history_id.setter
+    def history_id(self, value):
+        self._history_id = int(value)
+
+    @property
+    def uuid(self):
+        return self._uuid
+
+    @uuid.setter
+    def uuid(self, value):
+        self._uuid = str(value)
+
+    @property
+    def owner_id(self):
+        return self._owner_id
+
+    @owner_id.setter
+    def owner_id(self, value):
+        self._owner_id = int(value)
+
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter
+    def status(self, value):
+        self._status = str(value)
+
+    @property
+    def creation_date(self):
+        return self._creation_date
+
+    @creation_date.setter
+    def creation_date(self, value):
+        self._creation_date = int(value)
+
+    @property
+    def last_modification_date(self):
+        return self._last_modification_date
+
+    @last_modification_date.setter
+    def last_modification_date(self, value):
+        self._last_modification_date = int(value)
+
+
+class Filter(object):
+    """
+    Scan filter.
+
+    Attributes:
+        name(int):
+        readable_name(string):
+        operators(array):
+        controls(dict):
+    """
+
+    def __init__(self):
+        self._name = None
+        self._readable_name = None
+        self._operators = []
+        self._controls = {}
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = str(value)
+
+    @property
+    def readable_name(self):
+        return self._readable_name
+
+    @readable_name.setter
+    def readable_name(self, value):
+        self._readable_name = str(value)
+
+    @property
+    def operators(self):
+        return self._operators
+
+    @operators.setter
+    def operators(self, value):
+        self._operators = value
+
+    @property
+    def controls(self):
+        return self._controls
+
+    @controls.setter
+    def controls(self, value):
+        self._controls = value
