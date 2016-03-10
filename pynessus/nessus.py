@@ -255,6 +255,10 @@ class Nessus(object):
             bool: True if successful login, False otherwise.
         Raises:
         """
+        if self.server_version[0] != "6":
+            raise Exception("This version of Nessus is not supported by pynessus. \nIf you absolutely need to use "
+                            "pynessus with Nessus 5.x, please follow the instructions"
+                            "available on the git repository (https://github.com/qkaiser/pynessus)")
         params = {'username': user.username, 'password': user.password}
         response = self._api_request("POST", "/session", params)
         if response is not None:
