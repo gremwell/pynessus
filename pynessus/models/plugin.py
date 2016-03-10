@@ -38,16 +38,13 @@ class Plugin(NessusObject):
         Params:
         Returns:
         """
-        if self._server.server_version[0] == "6":
-            response = self._server._api_request("GET", "/plugins/plugin/%d" % self.id, "")
-            if response is not None:
-                self.id = response["id"]
-                self.name = response["name"]
-                self.family_name = response["family_name"]
-                self.attributes = response["attributes"]
-            return True
-        else:
-            raise Exception("Plugin families are not supported by Nessus version < 6.x .")
+        response = self._server._api_request("GET", "/plugins/plugin/%d" % self.id, "")
+        if response is not None:
+            self.id = response["id"]
+            self.name = response["name"]
+            self.family_name = response["family_name"]
+            self.attributes = response["attributes"]
+        return True
 
     @property
     def name(self):
@@ -101,18 +98,15 @@ class PluginFamily(NessusObject):
 
         :return:
         """
-        if self._server.server_version[0] == "6":
-            response = self._server._api_request("GET", "/plugins/families/%d" % self.id, "")
-            if "plugins" in response and response["plugins"] is not None:
-                for plugin in response["plugins"]:
-                    p = self._server.Plugin()
-                    p.id = plugin["id"]
-                    p.name = plugin["name"]
-                    p.load_details()
-                    self._plugins.append(p)
-            return True
-        else:
-            raise Exception("Plugin families are not supported by Nessus version < 6.x .")
+        response = self._server._api_request("GET", "/plugins/families/%d" % self.id, "")
+        if "plugins" in response and response["plugins"] is not None:
+            for plugin in response["plugins"]:
+                p = self._server.Plugin()
+                p.id = plugin["id"]
+                p.name = plugin["name"]
+                p.load_details()
+                self._plugins.append(p)
+        return True
 
     @property
     def id(self):

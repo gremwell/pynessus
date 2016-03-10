@@ -39,21 +39,18 @@ class Group(NessusObject):
         Params:
         Returns:
         """
-        if self._server.server_version[0] == "6":
-            response = self._server._api_request(
-                "POST",
-                "/groups",
-                {"name": self.name}
-            )
-            if response is not None:
-                self.id = response["id"]
-                self._name = response["name"]
-                self._permissions = response["permissions"]
-                return True
-            else:
-                return False
+        response = self._server._api_request(
+            "POST",
+            "/groups",
+            {"name": self.name}
+        )
+        if response is not None:
+            self.id = response["id"]
+            self._name = response["name"]
+            self._permissions = response["permissions"]
+            return True
         else:
-            raise Exception("Not supported.")
+            return False
 
     def edit(self):
         """
@@ -61,21 +58,18 @@ class Group(NessusObject):
         Params:
         Returns:
         """
-        if self._server.server_version[0] == "6":
-            response = self._server._api_request(
-                "POST",
-                "/groups/%d" % self.id,
-                {"name": self.name}
-            )
-            if response is not None:
-                self.id = response["id"]
-                self._name = response["name"]
-                self._permissions = response["permissions"]
-                return True
-            else:
-                return False
+        response = self._server._api_request(
+            "POST",
+            "/groups/%d" % self.id,
+            {"name": self.name}
+        )
+        if response is not None:
+            self.id = response["id"]
+            self._name = response["name"]
+            self._permissions = response["permissions"]
+            return True
         else:
-            raise Exception("Not supported.")
+            return False
 
     def delete(self):
         """
@@ -83,10 +77,45 @@ class Group(NessusObject):
         Params:
         Returns:
         """
-        if self._server.server_version[0] == "6":
+        response = self._server._api_request(
+            "DELETE",
+            "/groups/%d" % self.id,
+            ""
+        )
+        if response is None:
+            return True
+        else:
+            return False
+
+    def list_users(self):
+
+        response = self._server._api_request(
+            "GET",
+            "/groups/%d/users" % (self.id),
+            ""
+        )
+        if response is not None:
+            self._users = []
+            if "users" in response and response["users"] is not None:
+                for u in response["users"]:
+                    user = User(self._server)
+                    user.id = u["id"]
+                    user.username = u["username"]
+                    user.name = u["name"]
+                    user.email = u["email"]
+                    user.permissions = u["permissions"]
+                    user.lastlogin = u["lastlogin"]
+                    user.type = u["type"]
+                    self._users.append(user)
+            return True
+        else:
+            return False
+
+    def add_user(self, user):
+        if type(user) is User:
             response = self._server._api_request(
-                "DELETE",
-                "/groups/%d" % self.id,
+                "POST",
+                "/groups/%d/users/%d" % (self.id, user.id),
                 ""
             )
             if response is None:
@@ -94,70 +123,21 @@ class Group(NessusObject):
             else:
                 return False
         else:
-            raise Exception("Not supported.")
+            raise Exception("Invalid user format.")
 
-    def list_users(self):
-
-        if self._server.server_version[0] == "6":
+    def delete_user(self, user):
+        if type(user) is User:
             response = self._server._api_request(
-                "GET",
-                "/groups/%d/users" % (self.id),
+                "DELETE",
+                "/groups/%d/users/%d" % (self.id, user.id),
                 ""
             )
-            if response is not None:
-                self._users = []
-                if "users" in response and response["users"] is not None:
-                    for u in response["users"]:
-                        user = User(self._server)
-                        user.id = u["id"]
-                        user.username = u["username"]
-                        user.name = u["name"]
-                        user.email = u["email"]
-                        user.permissions = u["permissions"]
-                        user.lastlogin = u["lastlogin"]
-                        user.type = u["type"]
-                        self._users.append(user)
+            if response is None:
                 return True
             else:
                 return False
         else:
-            raise Exception("Not supported.")
-
-    def add_user(self, user):
-
-        if self._server.server_version[0] == "6":
-            if type(user) is User:
-                response = self._server._api_request(
-                    "POST",
-                    "/groups/%d/users/%d" % (self.id, user.id),
-                    ""
-                )
-                if response is None:
-                    return True
-                else:
-                    return False
-            else:
-                raise Exception("Invalid user format.")
-        else:
-            raise Exception("Not supported.")
-
-    def delete_user(self, user):
-
-        if self._server.server_version[0] == "6":
-            if type(user) is User:
-                response = self._server._api_request(
-                    "DELETE",
-                    "/groups/%d/users/%d" % (self.id, user.id),
-                    ""
-                )
-                if response is None:
-                    return True
-                else:
-                    return False
-            else:
-                raise Exception("Invalid user format.")
-        else:
-            raise Exception("Not supported.")
+            raise Exception("Invalid user format.")
 
     @property
     def users(self):

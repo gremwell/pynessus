@@ -72,32 +72,12 @@ class Policy(NessusObject):
         Params:
         Returns:
         """
-        if self._server.server_version[0] == "5":
-            params = {"policy_id": self.id}
-            response = self._server._api_request("POST", "/policy/copy", params)
-            if response is not None:
-                _p = response["policy"]
-                p = self._server.Policy()
-                p.name = _p["policyname"]
-                if "policycomments" in _p["policycontents"]:
-                    p.description = _p["policycontents"]["policycomments"]
-                for user in self._server.users:
-                    if user.name == _p["policyowner"]:
-                        self.owner = user
-                p.id = _p["policyid"]
-                p.visibility = _p["visibility"]
-                return p
-            else:
-                return None
-        elif self._server.server_version[0] == "6":
-            response = self._server._api_request("POST", "/policies/%d/copy" % self.id, "")
-            if response is not None:
-                p = self._server.Policy()
-                p.id = response["id"]
-                p.name = response["name"]
-                return p
-            else:
-                return None
+        response = self._server._api_request("POST", "/policies/%d/copy" % self.id, "")
+        if response is not None:
+            p = self._server.Policy()
+            p.id = response["id"]
+            p.name = response["name"]
+            return p
         else:
             return None
 
@@ -107,144 +87,122 @@ class Policy(NessusObject):
         Params:
         Returns:
         """
-        if self._server.server_version[0] == "5":
-            params = {
-                "policy_id": 0,
-                "general.Basic.0": self.name,
-                "general.Basic.1": self.description
-            }
-            if self._server.settings is not None:
-                params = dict(params.items() + self._server.settings.items())
-            response = self._server._api_request("POST", "/policy/update", params)
-            if response is not None:
-                self.id = response["metadata"]["id"]
-                for user in self._server.users:
-                    if user.name == response["metadata"]["owner"]:
-                        self.owner = user
-                self.visibility = response["metadata"]["visibility"]
+        params = {
+            "uuid": self.template_uuid,
+            "settings": {
+                "name": self.name,
+                "description": self.description,
+                "acls": [{"permissions": "16", "type": "default"}],
+                "ping_the_remote_host": "yes",
+                "test_local_nessus_host": "yes",
+                "fast_network_discovery": "no",
+                "arp_ping": "yes",
+                "tcp_ping": "yes",
+                "tcp_ping_dest_ports": "built-in",
+                "icmp_ping": "yes",
+                "icmp_unreach_means_host_down": "no",
+                "icmp_ping_retries": "2",
+                "udp_ping": "no",
+                "scan_network_printers": "no",
+                "scan_netware_hosts": "no",
+                "wol_mac_addresses": "",
+                "wol_wait_time": "5",
+                "network_type": "Mixed (use RFC 1918)",
+                "unscanned_closed": "no",
+                "portscan_range": "default",
+                "ssh_netstat_scanner": "yes",
+                "wmi_netstat_scanner": "yes",
+                "snmp_scanner": "yes",
+                "only_portscan_if_enum_failed": "yes",
+                "verify_open_ports": "no",
+                "tcp_scanner": "no",
+                "syn_scanner": "yes",
+                "syn_firewall_detection": "Automatic (normal)",
+                "udp_scanner": "no",
+                "svc_detection_on_all_ports": "yes",
+                "detect_ssl": "yes",
+                "ssl_prob_ports": "Known SSL ports",
+                "enumerate_all_ciphers": "yes",
+                "check_crl": "no",
+                "report_paranoia": "Normal",
+                "thorough_tests": "no",
+                "av_grace_period": "0",
+                "smtp_domain": "example.com",
+                "smtp_from": "nobody@example.com",
+                "smtp_to": "postmaster@[AUTO_REPLACED_IP]",
+                "provided_creds_only": "yes",
+                "test_default_oracle_accounts": "no",
+                "scan_webapps": "no",
+                "request_windows_domain_info": "yes",
+                "enum_domain_users_start_uid": "1000",
+                "enum_domain_users_end_uid": "1200",
+                "enum_local_users_start_uid": "1000",
+                "enum_local_users_end_uid": "1200",
+                "win_known_bad_hashes": "",
+                "win_known_good_hashes": "",
+                "host_whitelist": "",
+                "report_verbosity": "Normal",
+                "report_superseded_patches": "no",
+                "silent_dependencies": "yes",
+                "allow_post_scan_editing": "yes",
+                "reverse_lookup": "no",
+                "log_live_hosts": "no",
+                "display_unreachable_hosts": "no",
+                "safe_checks": "yes",
+                "log_whole_attack": "no",
+                "stop_scan_on_disconnect": "no",
+                "slice_network_addresses": "no",
+                "reduce_connections_on_congestion": "no",
+                "use_kernel_congestion_detection": "no",
+                "network_receive_timeout": "5",
+                "max_checks_per_host": "5",
+                "max_hosts_per_scan": "20",
+                "max_simult_tcp_sessions_per_host": "",
+                "max_simult_tcp_sessions_per_scan": "",
+                "ssh_known_hosts": "",
+                "ssh_port": "22",
+                "ssh_client_banner": "OpenSSH_5.0",
+                "never_send_win_creds_in_the_clear": "yes",
+                "dont_use_ntlmv1": "yes",
+                "start_remote_registry": "no",
+                "enable_admin_shares": "no",
+                "apm_force_updates": "yes",
+                "apm_update_timeout": "5",
+                "http_login_method": "POST",
+                "http_login_max_redir": "0",
+                "http_login_invert_auth_regex": "no",
+                "http_login_auth_regex_on_headers": "no",
+                "http_login_auth_regex_nocase": "no",
+                "snmp_port": "161",
+                "additional_snmp_port1": "161",
+                "additional_snmp_port2": "161",
+                "additional_snmp_port3": "161",
+                "patch_audit_over_telnet": "no",
+                "patch_audit_over_rsh": "no",
+                "patch_audit_over_rexec": "no",
+                "aws_ui_region_type": "Rest of the World",
+                "aws_us_east_1": "no",
+                "aws_us_west_1": "no",
+                "aws_us_west_2": "no",
+                "aws_eu_west_1": "no",
+                "aws_ap_northeast_1": "no",
+                "aws_ap_southeast_1": "no",
+                "aws_ap_southeast_2": "no",
+                "aws_sa_east_1": "no",
+                "aws_us_gov_west_1": "no",
+                "aws_use_https": "yes",
+                "aws_verify_ssl": "yes"
+            },
+            "credentials": {},
+            "plugins": {}
+        }
+        response = self._server._api_request("POST", "/policies", params)
+        if response is not None:
+            self.id = response["policy_id"]
+            self.name = response["policy_name"]
+            response2 = self._server._api_request("GET", "/policies/%d" % (self.id), "")
+            if response2 is not None:
                 return True
-            else:
-                return False
-
-        elif self._server.server_version[0] == "6":
-            params = {
-                "uuid": self.template_uuid,
-                "settings": {
-                    "name": self.name,
-                    "description": self.description,
-                    "acls": [{"permissions": "16", "type": "default"}],
-                    "ping_the_remote_host": "yes",
-                    "test_local_nessus_host": "yes",
-                    "fast_network_discovery": "no",
-                    "arp_ping": "yes",
-                    "tcp_ping": "yes",
-                    "tcp_ping_dest_ports": "built-in",
-                    "icmp_ping": "yes",
-                    "icmp_unreach_means_host_down": "no",
-                    "icmp_ping_retries": "2",
-                    "udp_ping": "no",
-                    "scan_network_printers": "no",
-                    "scan_netware_hosts": "no",
-                    "wol_mac_addresses": "",
-                    "wol_wait_time": "5",
-                    "network_type": "Mixed (use RFC 1918)",
-                    "unscanned_closed": "no",
-                    "portscan_range": "default",
-                    "ssh_netstat_scanner": "yes",
-                    "wmi_netstat_scanner": "yes",
-                    "snmp_scanner": "yes",
-                    "only_portscan_if_enum_failed": "yes",
-                    "verify_open_ports": "no",
-                    "tcp_scanner": "no",
-                    "syn_scanner": "yes",
-                    "syn_firewall_detection": "Automatic (normal)",
-                    "udp_scanner": "no",
-                    "svc_detection_on_all_ports": "yes",
-                    "detect_ssl": "yes",
-                    "ssl_prob_ports": "Known SSL ports",
-                    "enumerate_all_ciphers": "yes",
-                    "check_crl": "no",
-                    "report_paranoia": "Normal",
-                    "thorough_tests": "no",
-                    "av_grace_period": "0",
-                    "smtp_domain": "example.com",
-                    "smtp_from": "nobody@example.com",
-                    "smtp_to": "postmaster@[AUTO_REPLACED_IP]",
-                    "provided_creds_only": "yes",
-                    "test_default_oracle_accounts": "no",
-                    "scan_webapps": "no",
-                    "request_windows_domain_info": "yes",
-                    "enum_domain_users_start_uid": "1000",
-                    "enum_domain_users_end_uid": "1200",
-                    "enum_local_users_start_uid": "1000",
-                    "enum_local_users_end_uid": "1200",
-                    "win_known_bad_hashes": "",
-                    "win_known_good_hashes": "",
-                    "host_whitelist": "",
-                    "report_verbosity": "Normal",
-                    "report_superseded_patches": "no",
-                    "silent_dependencies": "yes",
-                    "allow_post_scan_editing": "yes",
-                    "reverse_lookup": "no",
-                    "log_live_hosts": "no",
-                    "display_unreachable_hosts": "no",
-                    "safe_checks": "yes",
-                    "log_whole_attack": "no",
-                    "stop_scan_on_disconnect": "no",
-                    "slice_network_addresses": "no",
-                    "reduce_connections_on_congestion": "no",
-                    "use_kernel_congestion_detection": "no",
-                    "network_receive_timeout": "5",
-                    "max_checks_per_host": "5",
-                    "max_hosts_per_scan": "20",
-                    "max_simult_tcp_sessions_per_host": "",
-                    "max_simult_tcp_sessions_per_scan": "",
-                    "ssh_known_hosts": "",
-                    "ssh_port": "22",
-                    "ssh_client_banner": "OpenSSH_5.0",
-                    "never_send_win_creds_in_the_clear": "yes",
-                    "dont_use_ntlmv1": "yes",
-                    "start_remote_registry": "no",
-                    "enable_admin_shares": "no",
-                    "apm_force_updates": "yes",
-                    "apm_update_timeout": "5",
-                    "http_login_method": "POST",
-                    "http_login_max_redir": "0",
-                    "http_login_invert_auth_regex": "no",
-                    "http_login_auth_regex_on_headers": "no",
-                    "http_login_auth_regex_nocase": "no",
-                    "snmp_port": "161",
-                    "additional_snmp_port1": "161",
-                    "additional_snmp_port2": "161",
-                    "additional_snmp_port3": "161",
-                    "patch_audit_over_telnet": "no",
-                    "patch_audit_over_rsh": "no",
-                    "patch_audit_over_rexec": "no",
-                    "aws_ui_region_type": "Rest of the World",
-                    "aws_us_east_1": "no",
-                    "aws_us_west_1": "no",
-                    "aws_us_west_2": "no",
-                    "aws_eu_west_1": "no",
-                    "aws_ap_northeast_1": "no",
-                    "aws_ap_southeast_1": "no",
-                    "aws_ap_southeast_2": "no",
-                    "aws_sa_east_1": "no",
-                    "aws_us_gov_west_1": "no",
-                    "aws_use_https": "yes",
-                    "aws_verify_ssl": "yes"
-                },
-                "credentials": {},
-                "plugins": {}
-            }
-            response = self._server._api_request("POST", "/policies", params)
-            if response is not None:
-                self.id = response["policy_id"]
-                self.name = response["policy_name"]
-                response2 = self._server._api_request("GET", "/policies/%d" % (self.id), "")
-                if response2 is not None:
-                    return True
-                else:
-                    return False
             else:
                 return False
         else:
@@ -256,143 +214,120 @@ class Policy(NessusObject):
         Params:
         Returns:
         """
-        if self._server.server_version[0] == "5":
-            params = {
-                "policy_id": self.id,
-                "general.Basic.0": self.name,
-                "general.Basic.1": self.description
-            }
-            if self.settings is not None:
-                for k in self.settings:
-                    params[k] = self.settings[k]
-            response = self._server._api_request("POST", "/policy/update", params)
-            if response is not None:
-                self.id = response["metadata"]["id"]
-                for user in self._server.users:
-                    if user.name == response["metadata"]["owner"]:
-                        self.owner = user
-                self.visibility = response["metadata"]["visibility"]
-                return True
-            else:
-                return False
-
-        elif self._server.server_version[0] == "6":
-            params = {
-                "uuid": "ad629e16-03b6-8c1d-cef6-ef8c9dd3c658d24bd260ef5f9e66",
-                "settings": {
-                    "name": "My new policy",
-                    "description": "Describe this new policy",
-                    "acls": [{"permissions": "16", "type": "default"}],
-                    "ping_the_remote_host": "yes",
-                    "test_local_nessus_host": "yes",
-                    "fast_network_discovery": "no",
-                    "arp_ping": "yes",
-                    "tcp_ping": "yes",
-                    "tcp_ping_dest_ports": "built-in",
-                    "icmp_ping": "yes",
-                    "icmp_unreach_means_host_down": "no",
-                    "icmp_ping_retries": "2",
-                    "udp_ping": "no",
-                    "scan_network_printers": "no",
-                    "scan_netware_hosts": "no",
-                    "wol_mac_addresses": "",
-                    "wol_wait_time": "5",
-                    "network_type": "Mixed (use RFC 1918)",
-                    "unscanned_closed": "no",
-                    "portscan_range": "default",
-                    "ssh_netstat_scanner": "yes",
-                    "wmi_netstat_scanner": "yes",
-                    "snmp_scanner": "yes",
-                    "only_portscan_if_enum_failed": "yes",
-                    "verify_open_ports": "no",
-                    "tcp_scanner": "no",
-                    "syn_scanner": "yes",
-                    "syn_firewall_detection": "Automatic (normal)",
-                    "udp_scanner": "no",
-                    "svc_detection_on_all_ports": "yes",
-                    "detect_ssl": "yes",
-                    "ssl_prob_ports": "Known SSL ports",
-                    "enumerate_all_ciphers": "yes",
-                    "check_crl": "no",
-                    "report_paranoia": "Normal",
-                    "thorough_tests": "no",
-                    "av_grace_period": "0",
-                    "smtp_domain": "example.com",
-                    "smtp_from": "nobody@example.com",
-                    "smtp_to": "postmaster@[AUTO_REPLACED_IP]",
-                    "provided_creds_only": "yes",
-                    "test_default_oracle_accounts": "no",
-                    "scan_webapps": "no",
-                    "request_windows_domain_info": "yes",
-                    "enum_domain_users_start_uid": "1000",
-                    "enum_domain_users_end_uid": "1200",
-                    "enum_local_users_start_uid": "1000",
-                    "enum_local_users_end_uid": "1200",
-                    "win_known_bad_hashes": "",
-                    "win_known_good_hashes": "",
-                    "host_whitelist": "",
-                    "report_verbosity": "Normal",
-                    "report_superseded_patches": "no",
-                    "silent_dependencies": "yes",
-                    "allow_post_scan_editing": "yes",
-                    "reverse_lookup": "no",
-                    "log_live_hosts": "no",
-                    "display_unreachable_hosts": "no",
-                    "safe_checks": "yes",
-                    "log_whole_attack": "no",
-                    "stop_scan_on_disconnect": "no",
-                    "slice_network_addresses": "no",
-                    "reduce_connections_on_congestion": "no",
-                    "use_kernel_congestion_detection": "no",
-                    "network_receive_timeout": "5",
-                    "max_checks_per_host": "5",
-                    "max_hosts_per_scan": "20",
-                    "max_simult_tcp_sessions_per_host": "",
-                    "max_simult_tcp_sessions_per_scan": "",
-                    "ssh_known_hosts": "",
-                    "ssh_port": "22",
-                    "ssh_client_banner": "OpenSSH_5.0",
-                    "never_send_win_creds_in_the_clear": "yes",
-                    "dont_use_ntlmv1": "yes",
-                    "start_remote_registry": "no",
-                    "enable_admin_shares": "no",
-                    "apm_force_updates": "yes",
-                    "apm_update_timeout": "5",
-                    "http_login_method": "POST",
-                    "http_login_max_redir": "0",
-                    "http_login_invert_auth_regex": "no",
-                    "http_login_auth_regex_on_headers": "no",
-                    "http_login_auth_regex_nocase": "no",
-                    "snmp_port": "161",
-                    "additional_snmp_port1": "161",
-                    "additional_snmp_port2": "161",
-                    "additional_snmp_port3": "161",
-                    "patch_audit_over_telnet": "no",
-                    "patch_audit_over_rsh": "no",
-                    "patch_audit_over_rexec": "no",
-                    "aws_ui_region_type": "Rest of the World",
-                    "aws_us_east_1": "no",
-                    "aws_us_west_1": "no",
-                    "aws_us_west_2": "no",
-                    "aws_eu_west_1": "no",
-                    "aws_ap_northeast_1": "no",
-                    "aws_ap_southeast_1": "no",
-                    "aws_ap_southeast_2": "no",
-                    "aws_sa_east_1": "no",
-                    "aws_us_gov_west_1": "no",
-                    "aws_use_https": "yes",
-                    "aws_verify_ssl": "yes"
-                },
-                "credentials": {},
-                "plugins": {}
-            }
-            if self.settings is not None:
-                params = dict(params.items() + self.settings.items())
-            response = self._server._api_request("PUT", "/policies/%d" % self.id, params)
-            if response is None:
-                return True
-            else:
-                return False
+        params = {
+            "uuid": "ad629e16-03b6-8c1d-cef6-ef8c9dd3c658d24bd260ef5f9e66",
+            "settings": {
+                "name": "My new policy",
+                "description": "Describe this new policy",
+                "acls": [{"permissions": "16", "type": "default"}],
+                "ping_the_remote_host": "yes",
+                "test_local_nessus_host": "yes",
+                "fast_network_discovery": "no",
+                "arp_ping": "yes",
+                "tcp_ping": "yes",
+                "tcp_ping_dest_ports": "built-in",
+                "icmp_ping": "yes",
+                "icmp_unreach_means_host_down": "no",
+                "icmp_ping_retries": "2",
+                "udp_ping": "no",
+                "scan_network_printers": "no",
+                "scan_netware_hosts": "no",
+                "wol_mac_addresses": "",
+                "wol_wait_time": "5",
+                "network_type": "Mixed (use RFC 1918)",
+                "unscanned_closed": "no",
+                "portscan_range": "default",
+                "ssh_netstat_scanner": "yes",
+                "wmi_netstat_scanner": "yes",
+                "snmp_scanner": "yes",
+                "only_portscan_if_enum_failed": "yes",
+                "verify_open_ports": "no",
+                "tcp_scanner": "no",
+                "syn_scanner": "yes",
+                "syn_firewall_detection": "Automatic (normal)",
+                "udp_scanner": "no",
+                "svc_detection_on_all_ports": "yes",
+                "detect_ssl": "yes",
+                "ssl_prob_ports": "Known SSL ports",
+                "enumerate_all_ciphers": "yes",
+                "check_crl": "no",
+                "report_paranoia": "Normal",
+                "thorough_tests": "no",
+                "av_grace_period": "0",
+                "smtp_domain": "example.com",
+                "smtp_from": "nobody@example.com",
+                "smtp_to": "postmaster@[AUTO_REPLACED_IP]",
+                "provided_creds_only": "yes",
+                "test_default_oracle_accounts": "no",
+                "scan_webapps": "no",
+                "request_windows_domain_info": "yes",
+                "enum_domain_users_start_uid": "1000",
+                "enum_domain_users_end_uid": "1200",
+                "enum_local_users_start_uid": "1000",
+                "enum_local_users_end_uid": "1200",
+                "win_known_bad_hashes": "",
+                "win_known_good_hashes": "",
+                "host_whitelist": "",
+                "report_verbosity": "Normal",
+                "report_superseded_patches": "no",
+                "silent_dependencies": "yes",
+                "allow_post_scan_editing": "yes",
+                "reverse_lookup": "no",
+                "log_live_hosts": "no",
+                "display_unreachable_hosts": "no",
+                "safe_checks": "yes",
+                "log_whole_attack": "no",
+                "stop_scan_on_disconnect": "no",
+                "slice_network_addresses": "no",
+                "reduce_connections_on_congestion": "no",
+                "use_kernel_congestion_detection": "no",
+                "network_receive_timeout": "5",
+                "max_checks_per_host": "5",
+                "max_hosts_per_scan": "20",
+                "max_simult_tcp_sessions_per_host": "",
+                "max_simult_tcp_sessions_per_scan": "",
+                "ssh_known_hosts": "",
+                "ssh_port": "22",
+                "ssh_client_banner": "OpenSSH_5.0",
+                "never_send_win_creds_in_the_clear": "yes",
+                "dont_use_ntlmv1": "yes",
+                "start_remote_registry": "no",
+                "enable_admin_shares": "no",
+                "apm_force_updates": "yes",
+                "apm_update_timeout": "5",
+                "http_login_method": "POST",
+                "http_login_max_redir": "0",
+                "http_login_invert_auth_regex": "no",
+                "http_login_auth_regex_on_headers": "no",
+                "http_login_auth_regex_nocase": "no",
+                "snmp_port": "161",
+                "additional_snmp_port1": "161",
+                "additional_snmp_port2": "161",
+                "additional_snmp_port3": "161",
+                "patch_audit_over_telnet": "no",
+                "patch_audit_over_rsh": "no",
+                "patch_audit_over_rexec": "no",
+                "aws_ui_region_type": "Rest of the World",
+                "aws_us_east_1": "no",
+                "aws_us_west_1": "no",
+                "aws_us_west_2": "no",
+                "aws_eu_west_1": "no",
+                "aws_ap_northeast_1": "no",
+                "aws_ap_southeast_1": "no",
+                "aws_ap_southeast_2": "no",
+                "aws_sa_east_1": "no",
+                "aws_us_gov_west_1": "no",
+                "aws_use_https": "yes",
+                "aws_verify_ssl": "yes"
+            },
+            "credentials": {},
+            "plugins": {}
+        }
+        if self.settings is not None:
+            params = dict(params.items() + self.settings.items())
+        response = self._server._api_request("PUT", "/policies/%d" % self.id, params)
+        if response is None:
+            return True
         else:
             return False
 
@@ -402,21 +337,9 @@ class Policy(NessusObject):
         Params:
         Returns:
         """
-        if self._server.server_version[0] == "5":
-            params = {
-                "policy_id": self.id
-            }
-            response = self._server._api_request("POST", "/policy/delete", params)
-            if response is not None:
-                return True
-            else:
-                return False
-        elif self._server.server_version[0] == "6":
-            response = self._server._api_request("DELETE", "/policies/%d" % self.id, "")
-            if response is None:
-                return True
-            else:
-                return False
+        response = self._server._api_request("DELETE", "/policies/%d" % self.id, "")
+        if response is None:
+            return True
         else:
             return False
 
@@ -426,19 +349,15 @@ class Policy(NessusObject):
         Params:
         Returns:
         """
-        if self._server.server_version[0] == "6":
-            response = self._server._api_request("GET", "/policies/%d" % self.id)
-            if response is not None:
-                print response
-                self.template_uuid = response["uuid"]
-                self.settings = response["settings"] if "settins" in response else None
-                self.audits = response["audits"] if "audits" in response else None
-                self.credentials = response["credentials"] if "credentials" in response else None
-                self.plugins = response["plugins"] if "plugins" in response else None
-                self.scap = response["scap"] if "scap" in response else None
-                return True
-        else:
-            raise Exception("Policy details not available in Nessus version < 6.x")
+        response = self._server._api_request("GET", "/policies/%d" % self.id)
+        if response is not None:
+            self.template_uuid = response["uuid"]
+            self.settings = response["settings"] if "settins" in response else None
+            self.audits = response["audits"] if "audits" in response else None
+            self.credentials = response["credentials"] if "credentials" in response else None
+            self.plugins = response["plugins"] if "plugins" in response else None
+            self.scap = response["scap"] if "scap" in response else None
+        return True
 
     def export(self, filename=None):
         """
@@ -446,95 +365,12 @@ class Policy(NessusObject):
         Params:
         Returns:
         """
-        if self._server.server_version[0] == "5":
-            if filename is None:
-                filename = "nessus_policy_%s.nessus" % self.name
-            response = self._server._request("GET", "/policy/download?policy_id=%d" % self.id, "")
-            with open(filename, "wb") as f:
-                f.write(response)
-            return filename
-        elif self._server.server_version[0] == "6":
-            if filename is None:
-                filename = "nessus_policy_%s.nessus" % self.name
-            response = self._server._request("GET", "/policies/%d/export" % self.id, "")
-            with open(filename, "wb") as f:
-                f.write(response)
-            return filename
-        else:
-            return False
-
-    def preferences(self):
-        """
-        Load and assign policy preferences
-        Params:
-            policy(Policy): policy instance
-        Returns:
-        """
-
-        if self._server.server_version[0] == "5":
-            params = {
-                "policy_id": self.id
-            }
-            response = self._server._api_request("POST", "/policy/list/plugins/preferences", params)
-            if response is not None:
-                self.preferences = []
-                if "preference" in response["pluginpreferences"]:
-                    for preference in response["pluginpreferences"]["preference"]:
-                        p = Preference()
-                        p.name = preference["name"]
-                        for value in preference["values"]:
-                            v = PreferenceValue()
-                            v.type = value["type"]
-                            v.name = value["name"]
-                            v.id = value["id"]
-                            p.values.append(v)
-                        self.preferences.append(p)
-                return True
-            else:
-                return False
-        else:
-            raise Exception("Not supported")
-
-    def plugins(self):
-        """
-        Load policy plugins
-        Params:
-        Returns:
-        """
-        if self._server.server_version[0] == "5":
-            params = {
-                "policy_id": self.id
-            }
-            response = self._server._api_request("POST", "/policy/list/families", params)
-            if response is not None:
-                if "family" in response["policyfamilies"]:
-                    families = []
-                    for family in response["policyfamilies"]["family"]:
-                        pf = self._server.PluginFamily()
-                        pf.name = family["name"]
-                        pf.id = family["id"]
-                        pf.plugin_count = family["plugin_count"]
-                        pf.status = family["status"]
-                        params2 = {
-                            "policy_id": self.id,
-                            "family_id": pf.id
-                        }
-                        response2 = self._api_request("POST", "/policy/list/plugins", params2)
-                        if response2 is not None:
-                            for plugin in response2["policyplugins"]["plugin"]:
-                                p = self._server.Plugin()
-                                p.name = plugin["pluginname"]
-                                p.filename = plugin["pluginfilename"]
-                                p.id = plugin["pluginid"]
-                                p.status = plugin["status"]
-                                pf.plugins.append(p)
-                        families.append(pf)
-                    self.plugins = families
-                return True
-            else:
-                return False
-        else:
-            raise Exception("Not supported.")
+        if filename is None:
+            filename = "nessus_policy_%s.nessus" % self.name
+        response = self._server._request("GET", "/policies/%d/export" % self.id, "")
+        with open(filename, "wb") as f:
+            f.write(response)
+        return filename
 
     @property
     def name(self):

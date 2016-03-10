@@ -52,18 +52,15 @@ class Agent(NessusObject):
         Params:
         Returns:
         """
-        if self._server.server_version[0] == "6":
-            response = self._server._api_request(
-                "DELETE",
-                "/scanners/%d/agents/%d" % (self._scanner_id, self.id),
-                ""
-            )
-            if response is not None:
-                return True
-            else:
-                return False
+        response = self._server._api_request(
+            "DELETE",
+            "/scanners/%d/agents/%d" % (self._scanner_id, self.id),
+            ""
+        )
+        if response is not None:
+            return True
         else:
-            raise Exception("Not supported.")
+            return False
 
     @property
     def id(self):

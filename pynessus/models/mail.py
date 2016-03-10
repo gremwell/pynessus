@@ -46,26 +46,24 @@ class Mail(NessusObject):
         self._smtp_enc = None
 
     def load(self):
-        if self._server.server_version[0] == "6":
-            response = self._server._api_request(
-                "GET",
-                "/settings/network/mail",
-                ""
-            )
-            if response is not None:
-                self.smtp_host = response["smtp_host"]
-                self.smtp_port = response["smtp_port"]
-                self.smtp_from = response["smtp_from"]
-                self.smtp_www_host = response["smtp_www_host"]
-                self.smtp_auth = response["smtp_auth"]
-                self.smtp_user = response["smtp_user"]
-                self.smtp_pass = response["smtp_pass"]
-                self.smtp_enc = response["smtp_enc"]
-                return True
-            else:
-                return False
+
+        response = self._server._api_request(
+            "GET",
+            "/settings/network/mail",
+            ""
+        )
+        if response is not None:
+            self.smtp_host = response["smtp_host"]
+            self.smtp_port = response["smtp_port"]
+            self.smtp_from = response["smtp_from"]
+            self.smtp_www_host = response["smtp_www_host"]
+            self.smtp_auth = response["smtp_auth"]
+            self.smtp_user = response["smtp_user"]
+            self.smtp_pass = response["smtp_pass"]
+            self.smtp_enc = response["smtp_enc"]
+            return True
         else:
-            raise Exception("Not supported.")
+            return False
 
     def update(self):
         """
@@ -73,27 +71,24 @@ class Mail(NessusObject):
         Params:
         Returns:
         """
-        if self._server.server_version[0] == "6":
-            response = self._server._api_request(
-                "PUT",
-                "/settings/network/mail",
-                {
-                    "smtp_host": self._smtp_host,
-                    "smtp_port": self._smtp_port,
-                    "smtp_from": self._smtp_from,
-                    "smtp_www_host": self._smtp_www_host,
-                    "smtp_auth": self._smtp_auth,
-                    "smtp_user": self._smtp_user,
-                    "smtp_pass": self._smtp_pass,
-                    "smtp_enc": self._smtp_enc,
-                }
-            )
-            if response is None:
-                return True
-            else:
-                return False
+        response = self._server._api_request(
+            "PUT",
+            "/settings/network/mail",
+            {
+                "smtp_host": self._smtp_host,
+                "smtp_port": self._smtp_port,
+                "smtp_from": self._smtp_from,
+                "smtp_www_host": self._smtp_www_host,
+                "smtp_auth": self._smtp_auth,
+                "smtp_user": self._smtp_user,
+                "smtp_pass": self._smtp_pass,
+                "smtp_enc": self._smtp_enc,
+            }
+        )
+        if response is None:
+            return True
         else:
-            raise Exception("Not supported.")
+            return False
 
     @property
     def smtp_host(self):

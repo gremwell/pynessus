@@ -211,22 +211,12 @@ class Nessus(object):
         """
         if not params:
             params = {}
-        if self.server_version == "5":
-            params['json'] = 1
         raw_response = self._request(method, target, json.dumps(params))
-	if raw_response is not None and len(raw_response):
+        if raw_response is not None and len(raw_response):
             response = json.loads(raw_response)
-            if self.server_version[0] == "5":
-                if "error" in response:
-                    raise NessusAPIError(response["error"])
-                elif response['reply']['status'] == "OK":
-                    return response["reply"]["contents"]
-                else:
-                    return None
-            elif self.server_version[0] == "6":
-                if response is not None and "error" in response:
-                    raise NessusAPIError(response["error"])
-                return response
+            if response is not None and "error" in response:
+                raise NessusAPIError(response["error"])
+            return response
         return None
 
     @staticmethod
@@ -265,37 +255,16 @@ class Nessus(object):
             bool: True if successful login, False otherwise.
         Raises:
         """
-        if self.server_version[0] == "5":
-            params = {'login': user.username, 'password': user.password}
-            response = self._api_request("POST", "/login", params)
-            if response is not None:
-                self._user = user
-                self._user.token = response['token']
-                self._user.admin = True if response['user']['admin'] == "TRUE" else False
-                self._scanner_boottime = response['scanner_boottime']
-                self._idle_timeout = response['idle_timeout']
-                self._plugin_set = response['plugin_set']
-                self._loaded_plugin_set = response["loaded_plugin_set"]
-                self._uuid = response['server_uuid']
-                # Persist token value for subsequent requests
-                self._headers["Cookie"] = "token=%s" % (response['token'])
-                return True
-            else:
-                return False
-        elif self.server_version[0] == "6":
-            #TODO: add session creation and management
-            params = {'username': user.username, 'password': user.password}
-            response = self._api_request("POST", "/session", params)
-            if response is not None:
-                if "status" in response:
-                    raise Exception(response["status"])
-                self._user = user
-                self._user.token = response['token']
-                # Persist token value for subsequent requests
-                self._headers["X-Cookie"] = 'token=%s' % (response['token'])
-                return True
-            else:
-                return False
+        params = {'username': user.username, 'password': user.password}
+        response = self._api_request("POST", "/session", params)
+        if response is not None:
+            if "status" in response:
+                raise Exception(response["status"])
+            self._user = user
+            self._user.token = response['token']
+            # Persist token value for subsequent requests
+            self._headers["X-Cookie"] = 'token=%s' % (response['token'])
+            return True
         else:
             return False
 
@@ -305,15 +274,8 @@ class Nessus(object):
         Returns:
             bool: True if successful login, False otherwise.
         """
-        if self.server_version[0] == "5":
-            response = self._api_request("POST", "/logout")
-            if response == "OK":
-                return True
-            else:
-                return False
-        else:
-            self._request("DELETE", "/session", [])
-            return True
+        self._request("DELETE", "/session", [])
+        return True
 
     @property
     def status(self):
@@ -322,14 +284,9 @@ class Nessus(object):
         Params:
         Returns
         """
-        if self.server_version[0] == "5":
-            raise Exception("Not yet implemented.")
-        elif self.server_version[0] == "6":
-            response = self._api_request("GET", "/server/status", "")
-            if response is not None:
-                return response["status"]
-            else:
-                return "unknown"
+        response = self._api_request("GET", "/server/status", "")
+        if response is not None:
+            return response["status"]
         else:
             return "unknown"
 
@@ -362,109 +319,95 @@ class Nessus(object):
 
         :return:
         """
-        if self.server_version[0] == "6":
-            response = self._api_request("GET", "/plugins/families", "")
-            if response is not None and "families" in response:
-                for family in response["families"]:
-                    p = self.PluginFamily()
-                    p.id = family["id"]
-                    p.name = family["name"]
-                    p.plugin_count = family["count"]
-                    p.load_plugins()
-                    self._plugin_families.append(p)
-            return True
-        else:
-            raise Exception("Plugin families are not supported by Nessus version < 6.x .")
+        response = self._api_request("GET", "/plugins/families", "")
+        if response is not None and "families" in response:
+            for family in response["families"]:
+                p = self.PluginFamily()
+                p.id = family["id"]
+                p.name = family["name"]
+                p.plugin_count = family["count"]
+                p.load_plugins()
+                self._plugin_families.append(p)
+        return True
 
     def load_plugin_rules(self):
         """
 
         :return:
         """
-        if self.server_version[0] == "6":
-            response = self._api_request("GET", "/plugin-rules", "")
-            if "plugin_rules" in response and response["plugin_rules"] is not None:
-                for p in response["plugin_rules"]:
-                    plugin_rule = self.PluginRule()
-                    plugin_rule.id = p["id"]
-                    plugin_rule.plugin_id = p["plugin_id"]
-                    plugin_rule.date = p["date"]
-                    plugin_rule.host = p["host"]
-                    plugin_rule.type = p["type"]
-                    plugin_rule.owner = p["owner"]
-                    plugin_rule.owner_id = p["owner_id"]
-                    self._plugin_rules.append(plugin_rule)
-            return True
-        else:
-            raise Exception("Plugin rules are not supported by Nessus version < 6.x .")
+
+        response = self._api_request("GET", "/plugin-rules", "")
+        if "plugin_rules" in response and response["plugin_rules"] is not None:
+            for p in response["plugin_rules"]:
+                plugin_rule = self.PluginRule()
+                plugin_rule.id = p["id"]
+                plugin_rule.plugin_id = p["plugin_id"]
+                plugin_rule.date = p["date"]
+                plugin_rule.host = p["host"]
+                plugin_rule.type = p["type"]
+                plugin_rule.owner = p["owner"]
+                plugin_rule.owner_id = p["owner_id"]
+                self._plugin_rules.append(plugin_rule)
+        return True
 
     def load_groups(self):
         """
 
         :return:
         """
-        if self.server_version[0] == "6":
-            response = self._api_request("GET", "/groups")
-            if "groups" in response and response["groups"] is not None:
-                for g in response["groups"]:
-                    group = self.Group()
-                    group.id = g["id"]
-                    group.name = g["name"]
-                    group.user_count = g["user_count"]
-                    group.permissions = g["permissions"]
-                    self._groups.append(group)
-            return True
-        else:
-            raise Exception("Groups are not supported by Nessus version < 6.x .")
+        response = self._api_request("GET", "/groups")
+        if "groups" in response and response["groups"] is not None:
+            for g in response["groups"]:
+                group = self.Group()
+                group.id = g["id"]
+                group.name = g["name"]
+                group.user_count = g["user_count"]
+                group.permissions = g["permissions"]
+                self._groups.append(group)
+        return True
 
     def load_agents(self):
         """
 
         :return:
         """
-        if self.server_version[0] == "6":
-            for scanner in self._scanners:
-                response = self._api_request("GET", "/scanners/%d/agents" % scanner.id)
-                if "agents" in response and response["agents"] is not None:
-                    for a in response["agents"]:
-                        agent = self.Agent()
-                        agent.distros = a["distros"]
-                        agent.id = a["id"]
-                        agent.ip = a["ip"]
-                        agent.last_scanned = a["last_scanned"]
-                        agent.name = a["name"]
-                        agent.platform = a["platform"]
-                        agent.token = a["token"]
-                        agent.uuid = a["uuid"]
-                        agent.scanner_id = scanner.id
-                        self._agents.append(agent)
-            return True
-        else:
-            raise Exception("Agents are not supported by Nessus version < 6.x .")
+        for scanner in self._scanners:
+            response = self._api_request("GET", "/scanners/%d/agents" % scanner.id)
+            if "agents" in response and response["agents"] is not None:
+                for a in response["agents"]:
+                    agent = self.Agent()
+                    agent.distros = a["distros"]
+                    agent.id = a["id"]
+                    agent.ip = a["ip"]
+                    agent.last_scanned = a["last_scanned"]
+                    agent.name = a["name"]
+                    agent.platform = a["platform"]
+                    agent.token = a["token"]
+                    agent.uuid = a["uuid"]
+                    agent.scanner_id = scanner.id
+                    self._agents.append(agent)
+        return True
 
     def load_agentgroups(self):
         """
 
         :return:
         """
-        if self.server_version[0] == "6":
-            for scanner in self._scanners:
-                response = self._api_request("GET", "/scanners/%d/agent-groups" % scanner.id)
-                if "groups" in response and response["groups"] is not None:
-                    for g in response["groups"]:
-                        group = self.AgentGroup()
-                        group.id = g["id"]
-                        group.name = g["name"]
-                        group.owner_id = g["owner_id"]
-                        group.owner = g["owner"]
-                        group.shared = g["shared"]
-                        group.user_permissions = g["user_permissions"]
-                        group.creation_date = g["creation_date"]
-                        group.last_modification_date = g["last_modification_date"]
-                        self._agentgroups.append(group)
-            return True
-        else:
-            raise Exception("Agents are not supported by Nessus version < 6.x .")
+        for scanner in self._scanners:
+            response = self._api_request("GET", "/scanners/%d/agent-groups" % scanner.id)
+            if "groups" in response and response["groups"] is not None:
+                for g in response["groups"]:
+                    group = self.AgentGroup()
+                    group.id = g["id"]
+                    group.name = g["name"]
+                    group.owner_id = g["owner_id"]
+                    group.owner = g["owner"]
+                    group.shared = g["shared"]
+                    group.user_permissions = g["user_permissions"]
+                    group.creation_date = g["creation_date"]
+                    group.last_modification_date = g["last_modification_date"]
+                    self._agentgroups.append(group)
+        return True
 
     def load_properties(self):
         """
@@ -506,49 +449,43 @@ class Nessus(object):
         Returns:
             bool: True if successful login, False otherwise.
         """
-        if self.server_version[0] == "6":
-            response = self._api_request("GET", "/editor/scan/templates", "")
-            self._templates = []
-            if "templates" in response:
-                for t in response["templates"]:
-                    template = self.Template()
-                    template.uuid = t["uuid"]
-                    template.title = t["title"]
-                    template.name = t["name"]
-                    template.description = t["desc"]
-                    template.more_info = t["more_info"] if "more_info" in t else None
-                    template.cloud_only = t["cloud_only"]
-                    template.subscription_only = t["subscription_only"]
-                    self._templates.append(template)
-            return True
-        else:
-            raise Exception("Templates are not supported by Nessus version < 6.x .")
+        response = self._api_request("GET", "/editor/scan/templates", "")
+        self._templates = []
+        if "templates" in response:
+            for t in response["templates"]:
+                template = self.Template()
+                template.uuid = t["uuid"]
+                template.title = t["title"]
+                template.name = t["name"]
+                template.description = t["desc"]
+                template.more_info = t["more_info"] if "more_info" in t else None
+                template.cloud_only = t["cloud_only"]
+                template.subscription_only = t["subscription_only"]
+                self._templates.append(template)
+        return True
 
     def load_scanners(self):
         """
 
         :return:
         """
-        if self.server_version[0] == "6":
-            response = self._api_request("GET", "/scanners")
-            if "scanners" in response:
-                for s in response["scanners"]:
-                    scanner = self.Scanner()
-                    scanner.id = s["id"]
-                    scanner.uuid = s["uuid"]
-                    scanner.name = s["name"]
-                    scanner.type = s["type"]
-                    scanner.status = s["status"]
-                    scanner.scan_count = s["scan_count"]
-                    scanner.engine_version = s["engine_version"]
-                    scanner.platform = s["platform"]
-                    scanner.loaded_plugin_set = s["loaded_plugin_set"]
-                    scanner.registration_code = s["registration_code"]
-                    scanner.owner = s["owner"]
-                    self._scanners.append(scanner)
-            return True
-        else:
-            raise Exception("Agents are not supported by Nessus version < 6.x .")
+        response = self._api_request("GET", "/scanners")
+        if "scanners" in response:
+            for s in response["scanners"]:
+                scanner = self.Scanner()
+                scanner.id = s["id"]
+                scanner.uuid = s["uuid"]
+                scanner.name = s["name"]
+                scanner.type = s["type"]
+                scanner.status = s["status"]
+                scanner.scan_count = s["scan_count"]
+                scanner.engine_version = s["engine_version"]
+                scanner.platform = s["platform"]
+                scanner.loaded_plugin_set = s["loaded_plugin_set"]
+                scanner.registration_code = s["registration_code"]
+                scanner.owner = s["owner"]
+                self._scanners.append(scanner)
+        return True
 
     def load_scans(self, tag_id=None):
         """
@@ -558,88 +495,28 @@ class Nessus(object):
         Returns:
             bool: True if successful login, False otherwise.
         """
-        if self.server_version[0] == "5":
-            params = {}
-            if tag_id is not None:
-                params['tag_id'] = tag_id
-            response = self._api_request("POST", "/result/list", params)
-            if response is not None:
-                if "result" in response:
-                    self._scans = []
-                    for result in response['result']:
-                        scan = self.Scan()
-                        scan.status = result["status"]
-                        scan.name = result["name"]
-                        scan.tag = result["tags"]
-                        scan.read = result["read"]
-                        scan.timestamp = result["timestamp"]
-                        scan.last_modification_date = result["last_modification_date"]
-                        scan.object_id = result["object_id"]
-                        scan.creation_date = result["creation_date"]
-                        scan.user_permissions = result["user_permissions"]
-                        scan.shared = result["shared"]
-                        scan.type = result["type"]
-                        scan.id = result["id"]
-                        scan.uuid = result["id"]
-                        for user in self.users:
-                            if user.id == result["owner_id"]:
-                                scan.owner = user
-                        self._scans.append(scan)
-                return True
-            else:
-                return False
-        elif self.server_version[0] == "6":
-            response = self._api_request("GET", "/scans", "")
-            self._scans = []
-            if "scans" in response and response["scans"] is not None:
-                for s in response["scans"]:
-                    scan = self.Scan()
-                    scan.status = s["status"]
-                    scan.name = s["name"]
-                    scan.read = s["read"]
-                    scan.last_modification_date = s["last_modification_date"]
-                    scan.creation_date = s["creation_date"]
-                    scan.user_permissions = s["user_permissions"]
-                    scan.shared = s["shared"]
-                    scan.id = s["id"]
-                    scan.template = self.Template()
-                    scan.template.uuid = s["uuid"]
-                    scan.folder = self.Folder()
-                    scan.folder.id = s["folder_id"]
-                    for user in self.users:
-                        if user.id == s["owner_id"]:
-                            scan.owner = user
-                    self._scans.append(scan)
-            return True
-        else:
-            return False
-
-    def load_tags(self):
-        """
-        Load Nessus server's tags.
-        Params:
-
-        Returns:
-            bool: True if successful login, False otherwise.
-        """
-        if self.server_version[0] == "5":
-            response = self._api_request("POST", "/tag/list")
-            if response is not None:
-                self._tags = []
-                for result in response['tags']:
-                    tag = self.Tag()
-                    tag.id = result["id"]
-                    tag.type = result["type"] if "type" in result else "local"
-                    tag.custom = result["custom"]
-                    tag.default_tag = result["default_tag"]
-                    tag.name = result["name"]
-                    tag.unread_count = result["unread_count"] if "unread_count" in result else 0
-                    self._tags.append(tag)
-                return True
-            else:
-                return False
-        else:
-            return False
+        response = self._api_request("GET", "/scans", "")
+        self._scans = []
+        if "scans" in response and response["scans"] is not None:
+            for s in response["scans"]:
+                scan = self.Scan()
+                scan.status = s["status"]
+                scan.name = s["name"]
+                scan.read = s["read"]
+                scan.last_modification_date = s["last_modification_date"]
+                scan.creation_date = s["creation_date"]
+                scan.user_permissions = s["user_permissions"]
+                scan.shared = s["shared"]
+                scan.id = s["id"]
+                scan.template = self.Template()
+                scan.template.uuid = s["uuid"]
+                scan.folder = self.Folder()
+                scan.folder.id = s["folder_id"]
+                for user in self.users:
+                    if user.id == s["owner_id"]:
+                        scan.owner = user
+                self._scans.append(scan)
+        return True
 
     def load_folders(self):
         """
@@ -647,22 +524,19 @@ class Nessus(object):
         Params:
         Returns:
         """
-        if self.server_version[0] == "6":
-            response = self._api_request("GET", "/folders")
-            if "folders" in response:
-                self._folders = []
-                for result in response["folders"]:
-                    f = self.Folder()
-                    f.id = result["id"]
-                    f.type = result["type"] if "type" in result else "local"
-                    f.custom = result["custom"]
-                    f.default_tag = result["default_tag"]
-                    f.name = result["name"]
-                    f.unread_count = result["unread_count"] if "unread_count" in result else 0
-                    self._folders.append(f)
-                return True
-            else:
-                return False
+        response = self._api_request("GET", "/folders")
+        if "folders" in response:
+            self._folders = []
+            for result in response["folders"]:
+                f = self.Folder()
+                f.id = result["id"]
+                f.type = result["type"] if "type" in result else "local"
+                f.custom = result["custom"]
+                f.default_tag = result["default_tag"]
+                f.name = result["name"]
+                f.unread_count = result["unread_count"] if "unread_count" in result else 0
+                self._folders.append(f)
+            return True
         else:
             return False
 
@@ -673,50 +547,24 @@ class Nessus(object):
         Returns:
             bool: True if successful login, False otherwise.
         """
-        if self.server_version[0] == "5":
-            response = self._api_request("POST", "/policy/list/policies")
-            if response is not None:
-                if "policy" in response["policies"]:
-                    self._policies = []
-                    for result in response['policies']["policy"]:
-                        policy = self.Policy()
-        	        policy.template_uuid = result["template_uuid"]
-	                policy.id = result["id"]
-                        policy.db_id = result["db_id"]
-                        policy.name = result["name"]
-                        policy.owner = result["owner"]
-                        policy.creation_date = result["creation_date"]
-                        policy.no_target = result["no_target"] if "no_target" in result else False
-                        policy.visibility = result["visibility"]
-                        policy.shared = result["shared"]
-                        policy.user_permissions = result["user_permissions"]
-                        policy.timestamp = result["timestamp"]
-                        policy.last_modification_date = result["last_modification_date"]
-                        policy.creation_date = result["creation_date"]
-                        policy.object_id = result["object_id"]
-                        self._policies.append(policy)
-                return True
-            else:
-                return False
-        elif self.server_version[0] == "6":
-            response = self._api_request("GET", "/policies")
-            if "policies" in response and response["policies"] is not None:
-                self._policies = []
-                for result in response['policies']:
-                    policy = self.Policy()
-                    policy.id = result["id"]
-        	    policy.template_uuid = result["template_uuid"]
-	            policy.name = result["name"]
-                    policy.owner = result["owner"]
-                    policy.creation_date = result["creation_date"]
-                    policy.no_target = result["no_target"] if "no_target" in result else False
-                    policy.visibility = result["visibility"]
-                    policy.shared = result["shared"]
-                    policy.user_permissions = result["user_permissions"]
-                    policy.last_modification_date = result["last_modification_date"]
-                    policy.creation_date = result["creation_date"]
-                    self._policies.append(policy)
-            return True
+        response = self._api_request("GET", "/policies")
+        if "policies" in response and response["policies"] is not None:
+            self._policies = []
+            for result in response['policies']:
+                policy = self.Policy()
+                policy.id = result["id"]
+                policy.template_uuid = result["template_uuid"]
+                policy.name = result["name"]
+                policy.owner = result["owner"]
+                policy.creation_date = result["creation_date"]
+                policy.no_target = result["no_target"] if "no_target" in result else False
+                policy.visibility = result["visibility"]
+                policy.shared = result["shared"]
+                policy.user_permissions = result["user_permissions"]
+                policy.last_modification_date = result["last_modification_date"]
+                policy.creation_date = result["creation_date"]
+                self._policies.append(policy)
+        return True
 
     def load_users(self):
         """
@@ -725,38 +573,20 @@ class Nessus(object):
         Returns:
             bool: True if successful login, False otherwise.
         """
-        if self.server_version[0] == "5":
-            response = self._api_request("POST", "/user/list")
-            if response is not None:
-                users = []
-                for result in response["user"]:
-                    user = self.User()
-                    user.permissions = result["permissions"]
-                    user.type = result["type"]
-                    user.name = result["name"]
-                    user.username = result["username"]
-                    user.id = result["id"]
-                    users.append(user)
-                return users
-            else:
-                return False
-        elif self.server_version[0] == "6":
-            response = self._api_request("GET", "/users")
-            if "users" in response:
-                users = []
-                for result in response["users"]:
-                    user = self.User()
-                    user.last_login = result["lastlogin"]
-                    user.permissions = result["permissions"]
-                    user.type = result["type"]
-                    user.name = result["name"]
-                    user.username = result["username"]
-                    user.id = result["id"]
-                    users.append(user)
-                self._users = users
-                return True
-            else:
-                return False
+        response = self._api_request("GET", "/users")
+        if "users" in response:
+            users = []
+            for result in response["users"]:
+                user = self.User()
+                user.last_login = result["lastlogin"]
+                user.permissions = result["permissions"]
+                user.type = result["type"]
+                user.name = result["name"]
+                user.username = result["username"]
+                user.id = result["id"]
+                users.append(user)
+            self._users = users
+            return True
         else:
             return False
 
@@ -772,25 +602,11 @@ class Nessus(object):
             raise Exception("This file does not exist.")
         else:
             content_type, body = self._encode(filename)
-            if self.server_version[0] == "5":
-                headers = dict()
-                headers["Content-type"] = content_type
-                headers["Accept"] = "application/json"
-                headers["Cookie"] = self._headers["Cookie"]
-                response = self._request("POST", "/file/upload", body, headers)
-                root = parseString(response.replace("\n", ""))
-                if root.getElementsByTagName("reply")[0].getElementsByTagName("status")[0].firstChild.data == "OK":
-                    return True
-                else:
-                    return False
-            elif self.server_version[0] == "6":
-                headers = self._headers
-                headers["Content-type"] = content_type
-                response = json.loads(self._request("POST", "/file/upload", body, self._headers))
-                if "fileuploaded" in response:
-                    return response["fileuploaded"]
-                else:
-                    return False
+            headers = self._headers
+            headers["Content-type"] = content_type
+            response = json.loads(self._request("POST", "/file/upload", body, self._headers))
+            if "fileuploaded" in response:
+                return response["fileuploaded"]
             else:
                 return False
 
@@ -800,21 +616,16 @@ class Nessus(object):
         Params:
         Returns:
         """
-        if self.server_version[0] == "5":
-            raise Exception("Not yet implemented.")
-        elif self.server_version[0] == "6":
-            uploaded_file = self.upload_file(filename)
-            if uploaded_file:
-                response = self._api_request(
-                    "POST",
-                    "/policies/import",
-                    {"file": uploaded_file}
-                )
-                return True if response is None else False
-            else:
-                raise Exception("An error occured while uploading %s." % filename)
+        uploaded_file = self.upload_file(filename)
+        if uploaded_file:
+            response = self._api_request(
+                "POST",
+                "/policies/import",
+                {"file": uploaded_file}
+            )
+            return True if response is None else False
         else:
-            return False
+            raise Exception("An error occured while uploading %s." % filename)
 
     def import_scan(self, filename, folder_id=None, password=None):
         """
@@ -825,26 +636,19 @@ class Nessus(object):
             password(str):
         Returns:
         """
-        if self.server_version[0] == "5":
-            raise Exception("Not yet implemented.")
-        elif self.server_version[0] == "6":
-            uploaded_file = self.upload_file(filename)
-            if uploaded_file:
-                params = {"file": uploaded_file}
-                if folder_id is not None:
-                    params["folder_id"] = folder_id
-                if password is not None:
-                    params["password"] = password
-                response = self._api_request(
-                    "POST",
-                    "/scans/import",
-                    params
-                )
-                return True if response is None else False
-            else:
-                raise Exception("An error occured while uploading %s." % filename)
-        else:
-            return False
+        uploaded_file = self.upload_file(filename)
+        if uploaded_file:
+            params = {"file": uploaded_file}
+            if folder_id is not None:
+                params["folder_id"] = folder_id
+            if password is not None:
+                params["password"] = password
+            response = self._api_request(
+                "POST",
+                "/scans/import",
+                params
+            )
+            return True if response is None else False
 
     @property
     def server_version(self):

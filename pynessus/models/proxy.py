@@ -45,23 +45,20 @@ class Proxy(NessusObject):
         This request requires system administrator user permissions.
         :return:
         """
-        if self._server.server_version[0] == "6":
-            response = self._server._api_request(
-                "GET",
-                "/settings/network/proxy",
-                ""
-            )
-            if response is not None:
-                self.proxy = response["proxy"]
-                self.proxy_port = response["proxy_port"]
-                self.proxy_username = response["proxy_username"]
-                self.proxy_password = response["proxy_password"]
-                self.user_agent = response["user_agent"]
-                return True
-            else:
-                return False
+        response = self._server._api_request(
+            "GET",
+            "/settings/network/proxy",
+            ""
+        )
+        if response is not None:
+            self.proxy = response["proxy"]
+            self.proxy_port = response["proxy_port"]
+            self.proxy_username = response["proxy_username"]
+            self.proxy_password = response["proxy_password"]
+            self.user_agent = response["user_agent"]
+            return True
         else:
-            raise Exception("Not supported.")
+            return False
 
     def update(self):
         """
@@ -69,24 +66,21 @@ class Proxy(NessusObject):
         Params:
         Returns:
         """
-        if self._server.server_version[0] == "6":
-            response = self._server._api_request(
-                "PUT",
-                "/settings/network/proxy",
-                {
-                    "proxy": self._proxy,
-                    "proxy_port": self._proxy_port,
-                    "proxy_username": self._proxy_username,
-                    "proxy_password": self._proxy_password,
-                    "user_agent": self._user_agent,
-                }
-            )
-            if response is None:
-                return True
-            else:
-                return False
+        response = self._server._api_request(
+            "PUT",
+            "/settings/network/proxy",
+            {
+                "proxy": self._proxy,
+                "proxy_port": self._proxy_port,
+                "proxy_username": self._proxy_username,
+                "proxy_password": self._proxy_password,
+                "user_agent": self._user_agent,
+            }
+        )
+        if response is None:
+            return True
         else:
-            raise Exception("Not supported.")
+            return False
 
     @property
     def proxy(self):

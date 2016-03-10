@@ -47,97 +47,81 @@ class AgentGroup(NessusObject):
         self._scanner_id = None
 
     def add_agent(self, agent_id):
-        if self._server.server_version[0] == "6":
-            response = self._server._api_request(
-                "PUT",
-                "/scanners/%d/agent-groups/%d/agents/%d" % (self._scanner_id, self.id, agent_id),
-                ""
-            )
-            if response is None:
-                return True
-            else:
-                return False
+        response = self._server._api_request(
+            "PUT",
+            "/scanners/%d/agent-groups/%d/agents/%d" % (self._scanner_id, self.id, agent_id),
+            ""
+        )
+        if response is None:
+            return True
         else:
-            raise Exception("Not supported.")
+            return False
 
     def create(self):
-        if self._server.server_version[0] == "6":
-            response = self._server._api_request(
-                "POST",
-                "/scanners/%d/agent-groups" % self.scanner_id,
-                {"name": self.name}
-            )
-            if response is not None:
-                self._id = response["id"]
-                return True
-            else:
-                return False
+        response = self._server._api_request(
+            "POST",
+            "/scanners/%d/agent-groups" % self.scanner_id,
+            {"name": self.name}
+        )
+        if response is not None:
+            self._id = response["id"]
+            return True
         else:
-            raise Exception("Not supported.")
+            return False
+
 
     def update(self):
-        if self._server.server_version[0] == "6":
-            response = self._server._api_request(
-                "PUT",
-                "/scanners/%d/agent-groups/%d" % (self._scanner_id, self.id),
-                {"name": self.name}
-            )
-            if response is None:
-                return True
-            else:
-                return False
+        response = self._server._api_request(
+            "PUT",
+            "/scanners/%d/agent-groups/%d" % (self._scanner_id, self.id),
+            {"name": self.name}
+        )
+        if response is None:
+            return True
         else:
-            raise Exception("Not supported.")
+            return False
 
     def delete(self):
-        if self._server.server_version[0] == "6":
-            response = self._server._api_request(
-                "DELETE",
-                "/scanners/%d/agent-groups/%d" % (self.scanner_id, self.id),
-                ""
-            )
-            if response is None:
-                return True
-            else:
-                return False
+        response = self._server._api_request(
+            "DELETE",
+            "/scanners/%d/agent-groups/%d" % (self.scanner_id, self.id),
+            ""
+        )
+        if response is None:
+            return True
         else:
-            raise Exception("Not supported.")
+            return False
+
 
     def remove_agent(self, agent_id):
-        if self._server.server_version[0] == "6":
-            response = self._server._api_request(
-                "DELETE",
-                "/scanners/%d/agent-groups/%d/agents/%d" % (self.scanner_id, self.id, agent_id),
-                ""
-            )
-            if response is None:
-                return True
-            else:
-                return False
+        response = self._server._api_request(
+            "DELETE",
+            "/scanners/%d/agent-groups/%d/agents/%d" % (self.scanner_id, self.id, agent_id),
+            ""
+        )
+        if response is None:
+            return True
         else:
-            raise Exception("Not supported.")
+            return False
 
     def details(self):
-        if self._server.server_version[0] == "6":
-            response = self._server._api_request(
-                "GET",
-                "/scanners/%d/agent-groups/%d" % (self.scanner_id, self.id),
-                ""
-            )
-            if response is not None:
-                self._id = response["id"]
-                self._name = response["name"]
-                self._owner_id = response["owner_id"]
-                self._owner = response["owner"]
-                self._shared = response["shared"]
-                self._user_permissions = response["user_permissions"]
-                self._creation_date = response["creation_date"]
-                self._creation_date = response["last_modification_date"]
-                return True
-            else:
-                return False
+        response = self._server._api_request(
+            "GET",
+            "/scanners/%d/agent-groups/%d" % (self.scanner_id, self.id),
+            ""
+        )
+        if response is not None:
+            self._id = response["id"]
+            self._name = response["name"]
+            self._owner_id = response["owner_id"]
+            self._owner = response["owner"]
+            self._shared = response["shared"]
+            self._user_permissions = response["user_permissions"]
+            self._creation_date = response["creation_date"]
+            self._creation_date = response["last_modification_date"]
+            return True
         else:
-            raise Exception("Not supported.")
+            return False
 
     @property
     def id(self):

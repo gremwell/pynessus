@@ -44,33 +44,30 @@ class Permission(NessusObject):
 
         :return:
         """
-        if self._server.server_version[0] == "6":
-            response = self._server._api_request("GET", "/permissions/%s/%d" % (object_type, object_id))
-            if response is not None:
-                self._id = response["id"]
-                self._name = response["name"]
-                self._owner = response["owner"]
-                self._type = response["type"]
-                self._permissions = response["permissions"]
-                return True
-        else:
-            raise Exception("Agents are not supported by Nessus version < 6.x .")
+
+        response = self._server._api_request("GET", "/permissions/%s/%d" % (object_type, object_id))
+        if response is not None:
+            self._id = response["id"]
+            self._name = response["name"]
+            self._owner = response["owner"]
+            self._type = response["type"]
+            self._permissions = response["permissions"]
+        return True
 
     def update(self, object_type, object_id):
         """
 
         :return:
         """
-        if self._server.server_version[0] == "6":
-            response = self._server._api_request(
-                "PUT",
-                "/permissions/%s/%d" % (object_type, object_id),
-                str(self._permissions)
-            )
-            if response is None:
-                return True
+        response = self._server._api_request(
+            "PUT",
+            "/permissions/%s/%d" % (object_type, object_id),
+            str(self._permissions)
+        )
+        if response is None:
+            return True
         else:
-            raise Exception("Agents are not supported by Nessus version < 6.x .")
+            return False
 
     @property
     def id(self):
