@@ -43,6 +43,60 @@ class User(NessusObject):
         self._permissions = 32
         self._type = "local"
 
+    def create(self):
+        """
+        Create a user.
+        Params:
+        Returns:
+        """
+        params = {
+            "username": self.username,
+            "permissions": self.permissions,
+            "type": self.type,
+            "password": self.password
+        }
+        response = self._server._api_request("POST", "/users", params)
+        if response is not None:
+            self.name = response["name"]
+            self.permissions = response["permissions"]
+            self.id = response["id"]
+            return True
+        else:
+            return False
+
+    def edit(self):
+        """
+        Edit a user.
+        Params:
+        Returns:
+        """
+        params = {
+            "username": self.username,
+            "permissions": self.permissions,
+            "type": self.type,
+            "password": self.password
+        }
+        response = self._server._api_request("PUT", "/users/%d" % self.id, params)
+        if response is not None:
+            self.name = response["name"]
+            self.permissions = response["permissions"]
+            self.id = response["id"]
+            return True
+        else:
+            return False
+
+    def delete(self):
+        """
+        Delete a user.
+        Params:
+        Returns:
+        """
+        response = self._server._api_request("DELETE", "/users/%d" % self.id, "")
+        if response is None:
+            return True
+        else:
+            return False
+
     @property
     def name(self):
         return self._name
@@ -65,6 +119,7 @@ class User(NessusObject):
 
     @password.setter
     def password(self, password):
+        #TODO: implement the change password call
         self._password = password
 
     @property

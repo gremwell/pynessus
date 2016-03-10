@@ -14,9 +14,10 @@ limitations under the License.
 """
 from nessusobject import NessusObject
 
-class Tag(NessusObject):
+
+class Folder(NessusObject):
     """
-    A Nessus Tag instance.
+    A Nessus Folder instance.
 
     Attributes:
 
@@ -26,12 +27,55 @@ class Tag(NessusObject):
 
     def __init__(self, server):
         """Constructor"""
-        super(Tag, self).__init__(server)
+        super(Folder, self).__init__(server)
         self._default_tag = 1
         self._type = None
         self._name = None
         self._custom = False
         self._unread_count = 0
+
+    def create(self):
+        """
+        Create a folder.
+        Params:
+        Returns:
+        """
+        params = {
+            "name": self.name
+        }
+        response = self.request("POST", "/folders", params)
+        if response is not None:
+            self.id = response["id"]
+            return True
+        else:
+            return False
+
+    def edit(self):
+        """
+        Edit a folder
+        Params:
+        Returns:
+        """
+        params = {
+            "name": self.name
+        }
+        response = self.request("PUT", "/folders/%d" % self.id, params)
+        if response is None:
+            return True
+        else:
+            return False
+
+    def delete(self):
+        """
+        Delete a folder.
+        Params:
+        Returns:
+        """
+        response = self.request("DELETE", "/folders/%d" % self.id, "")
+        if response is None:
+            return True
+        else:
+            return False
 
     @property
     def default_tag(self):
