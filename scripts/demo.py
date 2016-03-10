@@ -30,15 +30,12 @@ class Demo(Framework):
             self.info("POLICIES")
             for policy in nessus.policies:
                 self.alert("\t%s - %s" % (policy.id, policy.name))
-            self.info("SCHEDULES")
-            for schedule in nessus.schedules:
-                self.alert("\t%s - %s" % (schedule.id, schedule.name))
             self.info("USERS")
             for user in nessus.users:
                 self.alert("\t%s" % user.name)
-            self.info("TAGS")
-            for tag in nessus.tags:
-                self.alert("\t%s" % tag.name)
+            self.info("FOLDERS")
+            for folder in nessus.folders:
+                self.alert("\t%s" % folder.name)
 
             if nessus.logout():
                 self.info("Successfully logged out.")
