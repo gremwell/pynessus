@@ -21,8 +21,6 @@ from models.nessusobject import NessusObject
 from models.plugin import Plugin, PluginFamily
 from models.policy import Policy, Preference, PreferenceValue
 from models.scan import Scan, Note, Remediation, Vulnerability
-from models.schedule import Schedule
 from models.session import Session
-from models.tag import Tag
 from models.template import Template
 from models.user import User
