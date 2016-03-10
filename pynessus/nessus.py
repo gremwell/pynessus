@@ -305,7 +305,6 @@ class Nessus(object):
         success &= self.load_policies()
         success &= self.load_scans()
         success &= self.load_folders()
-        success &= self.load_tags()
         success &= self.load_templates()
         success &= self.load_users()
         #success &= self.load_groups()
