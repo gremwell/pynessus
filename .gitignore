@@ -7,7 +7,6 @@ reports
 .idea
 build
 dist
-tests
 mkdocs.yml
 site
 MANIFEST
