@@ -737,8 +737,8 @@ class Scan(NessusObject):
         information += "\n\t\t\t[[ Scan results ]]"
         for host in self.hosts:
             information += "\n# Host [%s]\n" % host.hostname
-            for vuln in host.vulnerabilities:
-                information += "\n\t * %s - %s" %(vuln.plugin_name, severity[vuln.severity])
+            for vuln in host.vulnerabilities[::-1]:
+                information += "\n\t * %s - %s" % (vuln.plugin_name, severity[vuln.severity])
         information += "\n"
         return information
 
