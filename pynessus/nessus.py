@@ -33,6 +33,8 @@ from models.mail import Mail
 from models.permission import Permission
 from models.proxy import Proxy
 from models.group import Group
+from models.vulnerability import Vulnerability
+
 
 class NessusAPIError(Exception):
     pass
@@ -157,6 +159,9 @@ class Nessus(object):
 
     def Group(self):
         return Group(self)
+
+    def Vulnerability(self):
+        return Vulnerability(self)
 
     def _request(self, method, target, params, headers=None):
         """
