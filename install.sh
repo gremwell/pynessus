@@ -27,6 +27,12 @@ loglevel = info
 limit = 3
 sleepmax = 600
 sleepmin = 300""" > ~/.pynessus.conf
-echo "alias nessus_scan='skanner.py -c ~/.pynessus.conf'" >> ~/.bashrc
+
+if [[ "$SHELL" == "/bin/zsh" ]]; then
+	echo "alias nessus_scan='skanner.py -c ~/.pynessus.conf'" >> ~/.zshrc
+else	
+	echo "alias nessus_scan='skanner.py -c ~/.pynessus.conf'" >> ~/.bashrc
+fi
+
 echo ""
 echo "[+] All done!"
