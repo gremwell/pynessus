@@ -74,21 +74,28 @@ class Skanner(Framework):
                                 scan.tag = folder
                         try:
                             if scan.launch():
-                            # scan launched, monitoring progress ...
-                                self.info("Scan %s has been launched, waiting for completion..." % scan.name)
-                                while scan.status != "completed" and scan.status != "canceled":
-                                    sys.stdout.write("%s[Status: %s]%s %d%%\r" % (Colors.O, scan.status, Colors.N, scan.progress))
-                                    sys.stdout.flush()
-                                    time.sleep(5)
-                                if scan.status == "completed":
-                                    path = scan.download()
-                                    if path is not None:
-                                        self.info("Report downloaded to %s" % path)
-                                        print scan.information()
+                                try:
+                                    # scan launched, monitoring progress ...
+                                    self.info("Scan %s has been launched, waiting for completion..." % scan.name)
+                                    while scan.status != "completed" and scan.status != "canceled":
+                                        sys.stdout.write("%s[Status: %s]%s %d%%\r" % (Colors.O, scan.status, Colors.N, scan.progress))
+                                        sys.stdout.flush()
+                                        time.sleep(5)
+                                    if scan.status == "completed":
+                                        path = scan.download()
+                                        if path is not None:
+                                            self.info("Report downloaded to %s" % path)
+                                            print scan.information()
+                                        else:
+                                            raise Exception("An error occured while downloading report %s." % r.id)
                                     else:
-                                        raise Exception("An error occured while downloading report %s." % r.id)
-                                else:
-                                    raise Exception("Scan has been canceled.")
+                                        raise Exception("Scan has been canceled.")
+                                except KeyboardInterrupt:
+                                    self.warning("Aborting scan ...")
+                                    if scan.stop():
+                                        self.info("Scan successfully aborted.")
+                                    else:
+                                        self.error("An error occured while aborting the scan.")
                             else:
                                 raise Exception("An error occured when launching the scan.")
                         except Exception as e:
