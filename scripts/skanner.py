@@ -5,6 +5,7 @@ import os
 import ConfigParser
 from datetime import datetime
 from optparse import OptionParser
+import logging
 
 from pynessus import Nessus
 
