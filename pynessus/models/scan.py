@@ -411,6 +411,7 @@ class Scan(NessusObject):
                     "description": self.description,
                     "folder_id": self.tag.id,
                     "scanner_id": self.scanner.id if self.scanner is not None else 1,
+                    "policy_id": self.policy.id,
                     "text_targets": self.custom_targets,
                     "file_targets": self.target_file_name if self.target_file_name is not None else "",
                     "launch": "ON_DEMAND",
