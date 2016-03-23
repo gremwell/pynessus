@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from nessusobject import NessusObject
+from vulnerability import Vulnerability
 
 
 class Host(NessusObject):
@@ -201,8 +202,20 @@ class Host(NessusObject):
 
     @property
     def vulnerabilities(self):
-        if self._vulnerabilities is None:
-            self._server.load_host_vulnerabilities(self)
+        response = self._server._api_request("GET", "/scans/%d/hosts/%d" % (self.scan.id, self.host_id))
+        if response is not None and "vulnerabilities" in response:
+            self._vulnerabilities = []
+            for vulnerability in response["vulnerabilities"]:
+                v = self._server.Vulnerability()
+                v.host = self
+                v.plugin_id = vulnerability["plugin_id"]
+                v.plugin_name = vulnerability["plugin_name"]
+                v.plugin_family = vulnerability["plugin_family"]
+                v.severity = vulnerability["severity"]
+                v.severity_index = vulnerability["severity_index"]
+                v.count = vulnerability["count"]
+                v.vuln_index = vulnerability["vuln_index"]
+                self._vulnerabilities.append(v)
         return self._vulnerabilities
 
     @vulnerabilities.setter
@@ -217,55 +230,7 @@ class Host(NessusObject):
     def scan(self, value):
         self._scan = value
 
-    def info(self):
-        """
 
-        :param host:
-        :return:
-        """
-        params = {
-            'id': self.scan.id,
-            'host_id': self.id
-        }
-        response = self._server._api_request("POST", "/result/details", params)
-        if response is not None:
-            self.vulnerabilities = []
-            for vulnerability in response["vulnerabilities"]:
-                v = Vulnerability()
-                v.plugin_id = vulnerability["plugin_id"]
-                v.plugin_name = vulnerability["plugin_name"]
-                v.plugin_family = vulnerability["plugin_family"]
-                v.severity = vulnerability["severity"]
-                v.severity_index = vulnerability["severity_index"]
-                v.count = vulnerability["count"]
-                v.vuln_index = vulnerability["vuln_index"]
-                self.vulnerabilities.append(v)
-            return True
-        else:
-            return False
-
-    @property
-    def vulnerabilities(self):
-        params = {
-            'id': self.scan.id,
-            'host_id': self.id
-        }
-        response = self._server._api_request("POST", "/result/details", params)
-        if response is not None:
-            self.vulnerabilities = []
-            for vulnerability in response["vulnerabilities"]:
-                v = Vulnerability()
-                v.plugin_id = vulnerability["plugin_id"]
-                v.plugin_name = vulnerability["plugin_name"]
-                v.plugin_family = vulnerability["plugin_family"]
-                v.severity = vulnerability["severity"]
-                v.severity_index = vulnerability["severity_index"]
-                v.count = vulnerability["count"]
-                v.vuln_index = vulnerability["vuln_index"]
-                self.vulnerabilities.append(v)
-            return True
-        else:
-            return False
 
     def compliance(self, host):
         """
