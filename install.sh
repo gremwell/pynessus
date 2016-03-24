@@ -13,6 +13,7 @@ read USERNAME
 echo -n "Password: "
 read -s PASSWORD
 
+mkdir -p ~/.config/pynessus
 echo """
 # Defaults
 
@@ -26,12 +27,13 @@ report_path = /home/$USER/tools/pynessus/reports
 loglevel = info
 limit = 3
 sleepmax = 600
-sleepmin = 300""" > ~/.pynessus.conf
+sleepmin = 300""" > ~/.config/pynessus/default.conf
+
 
 if [[ "$SHELL" == "/bin/zsh" ]]; then
-	echo "alias nessus_scan='skanner.py -c ~/.pynessus.conf'" >> ~/.zshrc
+	echo "alias nessus_scan='skanner.py -c ~/.config/pynessus/default.conf'" >> ~/.zshrc
 else	
-	echo "alias nessus_scan='skanner.py -c ~/.pynessus.conf'" >> ~/.bashrc
+	echo "alias nessus_scan='skanner.py -c ~/.config/pynessus/default.conf'" >> ~/.bashrc
 fi
 
 echo ""
