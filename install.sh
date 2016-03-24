@@ -23,7 +23,6 @@ port = $NESSUS_PORT
 user = $USERNAME
 password = $PASSWORD
 logfile = /tmp/pynessus.log
-report_path = /home/$USER/tools/pynessus/reports
 loglevel = info
 limit = 3
 sleepmax = 600
