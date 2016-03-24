@@ -4,9 +4,9 @@ echo "[+] Installing pynessus ..."
 sudo python setup.py install
 
 echo "[+] Configuring pynessys ..."
-echo -n "Nessus server hostname: "
+echo -n "Nessus server hostname (scanner.hacme.org): "
 read NESSUS_SERVER
-echo -n "Nessus server port: "
+echo -n "Nessus server port (8080): "
 read NESSUS_PORT
 echo -n "Username: "
 read USERNAME
