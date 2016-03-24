@@ -29,12 +29,5 @@ limit = 3
 sleepmax = 600
 sleepmin = 300""" > ~/.config/pynessus/default.conf
 
-
-if [[ "$SHELL" == "/bin/zsh" ]]; then
-	echo "alias nessus_scan='skanner.py -c ~/.config/pynessus/default.conf'" >> ~/.zshrc
-else	
-	echo "alias nessus_scan='skanner.py -c ~/.config/pynessus/default.conf'" >> ~/.bashrc
-fi
-
 echo ""
 echo "[+] All done!"
