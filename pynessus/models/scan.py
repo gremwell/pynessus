@@ -423,7 +423,6 @@ class Scan(NessusObject):
             "credentials": {},
             "plugins": {}
         }
-
         response = self._server._api_request("POST", "/scans", params)
         if "scan" in response and response["scan"] is not None:
             self.id = response["scan"]["id"]

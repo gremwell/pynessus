@@ -201,6 +201,7 @@ if __name__ == "__main__":
     parser.add_option("-s", dest='scan_uuid', help="scan uuid to hook")
     (options, args) = parser.parse_args()
 
+    options.configfile = options.configfile if options.configfile is not None else "%s/.config/pynessus/default.conf" % (os.path.expanduser('~'))
     if options.configfile is None:
         parser.print_help()
     else:

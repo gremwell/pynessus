@@ -4,15 +4,16 @@ echo "[+] Installing pynessus ..."
 sudo python setup.py install
 
 echo "[+] Configuring pynessys ..."
-echo -n "Nessus server hostname: "
+echo -n "Nessus server hostname (scanner.hacme.org): "
 read NESSUS_SERVER
-echo -n "Nessus server port: "
+echo -n "Nessus server port (8080): "
 read NESSUS_PORT
 echo -n "Username: "
 read USERNAME
 echo -n "Password: "
 read -s PASSWORD
 
+mkdir -p ~/.config/pynessus
 echo """
 # Defaults
 
@@ -22,17 +23,10 @@ port = $NESSUS_PORT
 user = $USERNAME
 password = $PASSWORD
 logfile = /tmp/pynessus.log
-report_path = /home/$USER/tools/pynessus/reports
 loglevel = info
 limit = 3
 sleepmax = 600
-sleepmin = 300""" > ~/.pynessus.conf
-
-if [[ "$SHELL" == "/bin/zsh" ]]; then
-	echo "alias nessus_scan='skanner.py -c ~/.pynessus.conf'" >> ~/.zshrc
-else	
-	echo "alias nessus_scan='skanner.py -c ~/.pynessus.conf'" >> ~/.bashrc
-fi
+sleepmin = 300""" > ~/.config/pynessus/default.conf
 
 echo ""
 echo "[+] All done!"
