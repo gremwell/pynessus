@@ -17,6 +17,7 @@ from httplib import HTTPSConnection, CannotSendRequest, ImproperConnectionState
 import os
 import json
 import socket
+import ssl
 import errno
 from xml.dom.minidom import parseString
 from models.scan import Scan
@@ -45,16 +46,18 @@ class Nessus(object):
         A Nessus Server instance.
     """
 
-    def __init__(self, url="", port=8834):
+    def __init__(self, url="", port=8834, verify=True):
         """
         Constructor.
         Params:
             url(string): nessus server's url
             port(int): nessus server's port
+            verify(bool): verify server's SSL cert if True
         Returns:
         """
         self._url = url
         self._port = port
+        self._verify = verify
 
         self._uuid = 0
         self._connection = None
@@ -176,7 +179,11 @@ class Nessus(object):
         """
         try:
             if self._connection is None:
-                self._connection = HTTPSConnection(self._url, self._port)
+                if not self._verify:
+                    ctx = ssl._create_unverified_context()
+                    self._connection = HTTPSConnection(self._url, self._port, context=ctx)
+                else:
+                    self._connection = HTTPSConnection(self._url, self._port)
             self._connection.request(method, target, params, self._headers if headers is None else headers)
         except CannotSendRequest:
             self._connection = HTTPSConnection(self._url, self._port)
