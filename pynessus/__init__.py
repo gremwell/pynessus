@@ -12,11 +12,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-__version__ = "0.2.2"
+__version__ = "0.3.0"
 from nessus import Nessus, NessusAPIError
-from models.policy import Policy
-from models.report import Report
-from models.scan import Scan
-from models.schedule import Schedule
-from models.tag import Tag
+from models.folder import Folder
+from models.group import Group
+from models.host import Host
+from models.nessusobject import NessusObject
+from models.plugin import Plugin, PluginFamily
+from models.policy import Policy, Preference, PreferenceValue
+from models.scan import Scan, Note, Remediation, Vulnerability
+from models.session import Session
+from models.template import Template
 from models.user import User
