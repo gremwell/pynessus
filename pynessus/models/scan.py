@@ -14,8 +14,8 @@ limitations under the License.
 """
 from time import sleep
 from nessusobject import NessusObject
-from pynessus.models.host import Host
-
+from vulnerability import Vulnerability
+from host import Host
 REPORT_CHAPTERS = [
     "vuln_hosts_summary",
     "vuln_by_host",
@@ -411,6 +411,7 @@ class Scan(NessusObject):
                     "description": self.description,
                     "folder_id": self.tag.id,
                     "scanner_id": self.scanner.id if self.scanner is not None else 1,
+                    "policy_id": self.policy.id,
                     "text_targets": self.custom_targets,
                     "file_targets": self.target_file_name if self.target_file_name is not None else "",
                     "launch": "ON_DEMAND",
@@ -422,7 +423,6 @@ class Scan(NessusObject):
             "credentials": {},
             "plugins": {}
         }
-
         response = self._server._api_request("POST", "/scans", params)
         if "scan" in response and response["scan"] is not None:
             self.id = response["scan"]["id"]
@@ -469,6 +469,7 @@ class Scan(NessusObject):
         if "comphosts" in response and response["comphosts"] is not None:
             for host in response["hosts"]:
                 h = Host(self._server)
+                h.scan = self
                 h.host_id = host["host_id"]
                 h.host_index = host["host_index"]
                 h.hostname = host["hostname"]
@@ -528,7 +529,7 @@ class Scan(NessusObject):
         self.vulnerabilities = []
         if "vulnerabilities" in response and response["vulnerabilities"] is not None:
             for vulnerability in response["vulnerabilities"]:
-                v = Vulnerability()
+                v = self._server.Vulnerability()
                 v.plugin_id = vulnerability["plugin_id"]
                 v.plugin_name = vulnerability["plugin_name"]
                 v.plugin_family = vulnerability["plugin_family"]
@@ -540,7 +541,7 @@ class Scan(NessusObject):
         self.compliance = []
         if "compliance" in response and response["compliance"] is not None:
             for vulnerability in response["compliance"]:
-                v = Vulnerability()
+                v = self._server.Vulnerability()
                 v.plugin_id = vulnerability["plugin_id"]
                 v.plugin_name = vulnerability["plugin_name"]
                 v.plugin_family = vulnerability["plugin_family"]
@@ -719,6 +720,28 @@ class Scan(NessusObject):
         else:
             return None
 
+    def information(self):
+        self.details()
+        severity = ["Informational", "Low", "Medium", "High", "Critical"]
+        information = ""
+        for host in self.hosts:
+            for vuln in host.vulnerabilities:
+                if vuln.plugin_name == "Nessus Scan Information":
+                    response = self._server._api_request(
+                        "GET",
+                        "/scans/%d/hosts/%d/plugins/%d" % (self.id, host.host_id, vuln.plugin_id)
+                    )
+                    if "outputs" in response:
+                        information += response["outputs"][0]["plugin_output"]
+
+        information += "\n\t\t\t[[ Scan results ]]"
+        for host in self.hosts:
+            information += "\n# Host [%s]\n" % host.hostname
+            for vuln in host.vulnerabilities[::-1]:
+                information += "\n\t * %s - %s" % (vuln.plugin_name, severity[vuln.severity])
+        information += "\n"
+        return information
+
     @property
     def vulnerabilities(self):
         """
@@ -793,83 +816,6 @@ class Scan(NessusObject):
         Returns the timezone list for creating a scan.
         """
         return
-
-
-class Vulnerability(object):
-
-    def __init__(self):
-        self._id = None
-        self._count = 0
-        self._plugin_id = 0
-        self._plugin_name = 0
-        self._plugin_family = None
-        self._vuln_index = 0
-        self._severity = 0
-        self._severity_index = 0
-
-    @property
-    def id(self):
-        return self._id
-
-    @id.setter
-    def id(self, value):
-        self._id = int(value)
-
-    @property
-    def count(self):
-        return self._count
-
-    @count.setter
-    def count(self, value):
-        self._count = value
-
-    @property
-    def plugin_id(self):
-        return self._plugin_id
-
-    @plugin_id.setter
-    def plugin_id(self, value):
-        self._plugin_id = value
-
-    @property
-    def plugin_name(self):
-        return self._plugin_name
-
-    @plugin_name.setter
-    def plugin_name(self, value):
-        self._plugin_name = value
-
-    @property
-    def plugin_family(self):
-        return self._plugin_family
-
-    @plugin_family.setter
-    def plugin_family(self, value):
-        self._plugin_family = value
-
-    @property
-    def vuln_index(self):
-        return self._vuln_index
-
-    @vuln_index.setter
-    def vuln_index(self, value):
-        self._vuln_index = value
-
-    @property
-    def severity(self):
-        return self._severity
-
-    @severity.setter
-    def severity(self, value):
-        self._severity = value
-
-    @property
-    def severity_index(self):
-        return self._severity_index
-
-    @severity_index.setter
-    def severity_index(self, value):
-        self._severity_index = value
 
 
 class Note(object):

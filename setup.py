@@ -20,5 +20,6 @@ setup(
     download_url="https://github.com/qkaiser/pynessus/releases/latest",
     package_dir={'pynessus': 'pynessus', 'pynessus.models': 'pynessus/models'},
     packages=['pynessus', 'pynessus.models'],
+    scripts=['scripts/nessus_scan'],
     classifiers=CLASSIFIERS,
 )
