@@ -3,6 +3,8 @@ PyNessus : Nessus REST API client.
 
 python-nessus is an Apache 2 Licensed Nessus library, written in Python, for security auditors and pentesters.
 
+IMPORTANT: PyNessus does not support recent versions of Nessus, starting from version 7.x. This is due to Tenable no longer exposing the Nessus REST API.
+
 Features Support
 ----------------
 
